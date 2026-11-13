@@ -1,0 +1,462 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   MediaPrag-Analytics — dizayn tizimi
+   Ranglar yuqori kontrastga sozlangan: matn ≥ 7:1, grafik belgilari ≥ 4.5:1
+   ========================================================================= */
+
+:root {
+  color-scheme: light;
+
+  --bg: #e8e7e1;
+  --bg-2: #dedcd4;
+  --surface: #ffffff;
+  --surface-2: #f4f3ef;
+  --ink: #07080a;
+  --ink-2: #212226;
+  --muted: #44454a;
+  --line: #cbcac1;
+  --line-strong: #7e7e75;
+  --brand: #0b2545;
+  --brand-2: #143a68;
+  --brand-ink: #ffffff;
+  --accent: #0f5fc2;
+  --accent-soft: rgba(15, 95, 194, 0.12);
+  --danger: #a4161a;
+  --ok: #0b6b2e;
+
+  /* grafik seriyalari */
+  --s1: #0f5fc2;
+  --s2: #c2410c;
+  --s3: #5b21b6;
+  --grid: #cfcec5;
+
+  /* sifat darajalari (past → yuqori) */
+  --lvl-0: #a4161a;
+  --lvl-1: #b45309;
+  --lvl-2: #15803d;
+  --lvl-3: #0b4f2a;
+
+  /* matndagi belgilar */
+  --hl-muammo: rgba(164, 22, 26, 0.18);
+  --hl-muammo-line: #a4161a;
+  --hl-vosita: rgba(15, 95, 194, 0.16);
+  --hl-vosita-line: #0f5fc2;
+
+  --shadow-sm: 0 1px 2px rgba(7, 8, 10, 0.08);
+  --shadow-md: 0 6px 20px -6px rgba(7, 8, 10, 0.18);
+  --shadow-lg: 0 24px 60px -20px rgba(7, 8, 10, 0.45);
+  --radius: 14px;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+/* Qorong‘i mavzu: foydalanuvchi tanlagan (data-theme="dark") … */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #08090a;
+  --bg-2: #0e1013;
+  --surface: #16181c;
+  --surface-2: #1f2228;
+  --ink: #ffffff;
+  --ink-2: #e7e8ea;
+  --muted: #b6b8bd;
+  --line: #363a41;
+  --line-strong: #626771;
+  --brand: #9dc4f8;
+  --brand-2: #c2dbfc;
+  --brand-ink: #06182e;
+  --accent: #6ea8ff;
+  --accent-soft: rgba(110, 168, 255, 0.18);
+  --danger: #ff8a8a;
+  --ok: #4ade80;
+
+  --s1: #5aa2ff;
+  --s2: #ff7f45;
+  --s3: #a78bfa;
+  --grid: #333840;
+
+  --lvl-0: #ff8a8a;
+  --lvl-1: #f5a524;
+  --lvl-2: #4ade80;
+  --lvl-3: #16a34a;
+
+  --hl-muammo: rgba(255, 138, 138, 0.26);
+  --hl-muammo-line: #ff8a8a;
+  --hl-vosita: rgba(110, 168, 255, 0.26);
+  --hl-vosita-line: #6ea8ff;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+}
+
+/* … yoki tizim sozlamasi bo‘yicha (tanlov «tizimdagidek» bo‘lsa) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --bg: #08090a;
+    --bg-2: #0e1013;
+    --surface: #16181c;
+    --surface-2: #1f2228;
+    --ink: #ffffff;
+    --ink-2: #e7e8ea;
+    --muted: #b6b8bd;
+    --line: #363a41;
+    --line-strong: #626771;
+    --brand: #9dc4f8;
+    --brand-2: #c2dbfc;
+    --brand-ink: #06182e;
+    --accent: #6ea8ff;
+    --accent-soft: rgba(110, 168, 255, 0.18);
+    --danger: #ff8a8a;
+    --ok: #4ade80;
+
+    --s1: #5aa2ff;
+    --s2: #ff7f45;
+    --s3: #a78bfa;
+    --grid: #333840;
+
+    --lvl-0: #ff8a8a;
+    --lvl-1: #f5a524;
+    --lvl-2: #4ade80;
+    --lvl-3: #16a34a;
+
+    --hl-muammo: rgba(255, 138, 138, 0.26);
+    --hl-muammo-line: #ff8a8a;
+    --hl-vosita: rgba(110, 168, 255, 0.26);
+    --hl-vosita-line: #6ea8ff;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.7);
+    --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Mavzu almashganda yangi ko‘rinish tugmadan aylana bo‘lib ochiladi (View Transitions) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-brand-ink: var(--brand-ink);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-card: var(--radius);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+h1 { font-size: 26px; font-weight: 700; }
+h2 { font-size: 17px; font-weight: 650; }
+h3 { font-size: 14px; font-weight: 650; }
+p { margin: 0; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+::selection { background: var(--accent); color: #fff; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------------------------- fon */
+
+.page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(1100px 620px at 12% -10%, color-mix(in oklab, var(--s1) 16%, transparent), transparent 70%),
+    radial-gradient(900px 560px at 92% 4%, color-mix(in oklab, var(--s2) 13%, transparent), transparent 72%),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 46%);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.3;
+}
+
+/* ---------------------------------------------------------------- karta */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  min-width: 0;
+}
+
+.card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- tugma */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--ink-2); text-decoration: none; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover { background: var(--brand-2); border-color: var(--brand-2); color: var(--brand-ink); }
+
+.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 55%, var(--line)); }
+.btn-danger:hover { background: color-mix(in oklab, var(--danger) 12%, var(--surface)); border-color: var(--danger); }
+
+.btn-sm { padding: 5px 11px; font-size: 12.5px; border-radius: 8px; }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--surface-2); border-color: var(--line); }
+
+/* ---------------------------------------------------------------- forma */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.field > span {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+input[type="text"],
+input[type="search"],
+input[type="url"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 10px;
+  padding: 8px 11px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+textarea { resize: vertical; min-height: 76px; line-height: 1.6; }
+
+/* tanlov «chip»lari */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+.chip:hover { border-color: var(--ink-2); }
+.chip[data-on="true"] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+
+/* ---------------------------------------------------------------- jadval */
+
+.table-wrap { overflow-x: auto; border-radius: 10px; }
+table.data { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+table.data th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 9px 11px;
+  border-bottom: 2px solid var(--line-strong);
+  white-space: nowrap;
+}
+table.data td {
+  padding: 10px 11px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+table.data tbody tr { transition: background-color 0.14s ease; }
+table.data tbody tr:hover td { background: var(--surface-2); }
+table.data .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.data .id { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- belgilar */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 11px 3px 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line-strong);
+  color: var(--ink);
+}
+.badge i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
+.badge.lvl-0 i { background: var(--lvl-0); }
+.badge.lvl-1 i { background: var(--lvl-1); }
+.badge.lvl-2 i { background: var(--lvl-2); }
+.badge.lvl-3 i { background: var(--lvl-3); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 550;
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink-2);
+}
+
+.mono { font-family: var(--font-mono); font-size: 12px; }
+
+/* ---------------------------------------------------------------- matn belgilash */
+
+mark.hl {
+  background: var(--hl-muammo);
+  color: inherit;
+  border-bottom: 2.5px solid var(--hl-muammo-line);
+  border-radius: 3px;
+  padding: 0 2px;
+  cursor: help;
+}
+mark.hl.vosita {
+  background: var(--hl-vosita);
+  border-bottom-color: var(--hl-vosita-line);
+}
+
+@keyframes hl-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--hl-muammo-line) 60%, transparent); }
+  100% { box-shadow: 0 0 0 14px transparent; }
+}
+mark.hl.yangi { animation: hl-pulse 0.9s ease-out; }
+
+/* ---------------------------------------------------------------- turli */
+
+.divider { height: 1px; background: var(--line); border: 0; }
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
