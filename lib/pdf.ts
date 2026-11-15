@@ -1,34 +1,12 @@
 /** «Tahlil kartasi» — bitta material bo‘yicha PDF hujjat (foydalanuvchi tilida). */
-import path from "node:path";
-import PDFDocument from "pdfkit";
-
 import { all, hozir } from "./db";
 import { darajaIndeks, idRaqami, sana } from "./format";
 import { tarjimon } from "./i18n";
 import type { Til } from "./i18n/til";
 import { tahlilOlish } from "./queries";
+import { CHAP, KENGLIK, RANG, yangiHujjat } from "./pdfAsos";
 import { metodikaniYuklash } from "./scoring";
 import type { Belgi, Mezon } from "./types";
-
-const SHRIFT = path.join(process.cwd(), "node_modules", "dejavu-fonts-ttf", "ttf", "DejaVuSans.ttf");
-const SHRIFT_QALIN = path.join(process.cwd(), "node_modules", "dejavu-fonts-ttf", "ttf", "DejaVuSans-Bold.ttf");
-
-// Yorqin mavzu palitrasi (ilovadagi bilan bir xil)
-const RANG = {
-  brand: "#0b2545",
-  ink: "#07080a",
-  ink2: "#212226",
-  muted: "#44454a",
-  line: "#cbcac1",
-  surface2: "#f4f3ef",
-  s1: "#0f5fc2",
-  muammo: "#a4161a",
-  vosita: "#0f5fc2",
-  lvl: ["#a4161a", "#b45309", "#15803d", "#0b4f2a"],
-};
-
-const CHAP = 48;
-const KENGLIK = 595.28 - CHAP * 2;
 
 export async function tahlilKartasiPdf(materialId: number, til: Til): Promise<Buffer> {
   const tr = tarjimon(til);
@@ -37,53 +15,10 @@ export async function tahlilKartasiPdf(materialId: number, til: Til): Promise<Bu
   const m = metodikaniYuklash();
   const mezonlar = all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
 
-  const doc = new PDFDocument({
-    size: "A4",
-    margins: { top: 48, bottom: 60, left: CHAP, right: CHAP },
-    bufferPages: true,
-    info: { Title: t("pdf.sarlavha", { id: idRaqami(material.id) }), Author: "MediaPrag-Analytics" },
-  });
-  doc.registerFont("r", SHRIFT);
-  doc.registerFont("b", SHRIFT_QALIN);
-
-  const bolaklar: Buffer[] = [];
-  doc.on("data", (c: Buffer) => bolaklar.push(c));
-  const tayyor = new Promise<Buffer>((res) => doc.on("end", () => res(Buffer.concat(bolaklar))));
-
-  const pastkiChegara = () => doc.page.height - doc.page.margins.bottom;
-  const joy = (h: number) => {
-    if (doc.y + h > pastkiChegara()) doc.addPage();
-  };
-
-  const bolim = (sarlavha: string, manba?: string) => {
-    joy(60);
-    doc.moveDown(0.9);
-    const y = doc.y;
-    doc.rect(CHAP, y, 4, 16).fill(RANG.brand);
-    doc.font("b").fontSize(12.5).fillColor(RANG.ink).text(sarlavha, CHAP + 12, y + 1, { width: KENGLIK - 140 });
-    if (manba) doc.font("r").fontSize(8.5).fillColor(RANG.muted).text(manba, CHAP, y + 4, { width: KENGLIK, align: "right" });
-    doc.y = y + 24;
-    doc.x = CHAP;
-  };
-
-  const kalitQiymat = (kalit: string, qiymat: string, kalitKengligi = 150) => {
-    const h = Math.max(doc.font("r").fontSize(10).heightOfString(qiymat, { width: KENGLIK - kalitKengligi }), 14);
-    joy(h + 6);
-    const y = doc.y;
-    doc.font("r").fontSize(9.5).fillColor(RANG.muted).text(kalit, CHAP, y, { width: kalitKengligi - 10 });
-    doc.font("r").fontSize(10).fillColor(RANG.ink).text(qiymat, CHAP + kalitKengligi, y, { width: KENGLIK - kalitKengligi });
-    doc.y = y + h + 5;
-    doc.moveTo(CHAP, doc.y - 2).lineTo(CHAP + KENGLIK, doc.y - 2).lineWidth(0.5).strokeColor(RANG.line).stroke();
-    doc.x = CHAP;
-  };
+  const { doc, joy, lenta, bolim, kalitQiymat, yakunlash } = yangiHujjat(t("pdf.sarlavha", { id: idRaqami(material.id) }));
 
   // ------------------------------------------------------------ sarlavha lentasi
-  doc.rect(0, 0, doc.page.width, 92).fill(RANG.brand);
-  doc.font("b").fontSize(9).fillColor("#c2dbfc").text("MEDIAPRAG-ANALYTICS", CHAP, 24, { characterSpacing: 1.2 });
-  doc.font("b").fontSize(22).fillColor("#ffffff").text(t("pdf.sarlavha", { id: idRaqami(material.id) }), CHAP, 40);
-  doc.font("r").fontSize(9).fillColor("#c2dbfc").text(t("nav.brendSub"), CHAP, 68);
-  doc.y = 112;
-  doc.x = CHAP;
+  lenta(t("pdf.sarlavha", { id: idRaqami(material.id) }), t("nav.brendSub"));
 
   // ------------------------------------------------------------ metama’lumot
   kalitQiymat(t("u.nashr"), `${material.nashr} · ${tr.mediaQ(material.turi)}`);
@@ -221,28 +156,5 @@ export async function tahlilKartasiPdf(materialId: number, til: Til): Promise<Bu
   }
 
   // ------------------------------------------------------------ sahifa pastki qismi
-  const sahifalar = doc.bufferedPageRange();
-  const vaqt = hozir().replace("T", " ").slice(0, 16);
-  for (let p = sahifalar.start; p < sahifalar.start + sahifalar.count; p++) {
-    doc.switchToPage(p);
-    // Kolontitul pastki maydon ichida joylashadi — aks holda pdfkit yangi sahifa ochib yuboradi
-    const pastkiMaydon = doc.page.margins.bottom;
-    doc.page.margins.bottom = 0;
-    const y = doc.page.height - 38;
-    doc.moveTo(CHAP, y - 6).lineTo(CHAP + KENGLIK, y - 6).lineWidth(0.5).strokeColor(RANG.line).stroke();
-    doc
-      .font("r")
-      .fontSize(8)
-      .fillColor(RANG.muted)
-      .text(t("pdf.kolontitul", { v: m.versiya, d: vaqt }), CHAP, y, { width: KENGLIK / 2, lineBreak: false });
-    doc.text(`${p - sahifalar.start + 1} / ${sahifalar.count}`, CHAP + KENGLIK / 2, y, {
-      width: KENGLIK / 2,
-      align: "right",
-      lineBreak: false,
-    });
-    doc.page.margins.bottom = pastkiMaydon;
-  }
-
-  doc.end();
-  return tayyor;
+  return yakunlash(t("pdf.kolontitul", { v: m.versiya, d: hozir().replace("T", " ").slice(0, 16) }));
 }

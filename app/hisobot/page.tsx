@@ -1,10 +1,12 @@
 import Link from "next/link";
 
+import { NashrHisobotKarta } from "@/components/hisobot/NashrHisobotKarta";
 import { ZaxiraKarta } from "@/components/hisobot/ZaxiraKarta";
 import { Card, CardHead, Stagger } from "@/components/ui/Card";
 import { dashboard } from "@/lib/analytics";
 import type { Kalit } from "@/lib/i18n";
 import { sahifaSarlavhasi, serverTarjimon } from "@/lib/i18n/server";
+import { hisobotNashrlari } from "@/lib/nashrHisoboti";
 import { zaxiraHolati } from "@/lib/zaxira";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +72,8 @@ export default async function HisobotSahifasi() {
           </div>
           <p className="hint mt-3">{t("hs.tilIzoh")}</p>
         </Card>
+
+        <NashrHisobotKarta nashrlar={hisobotNashrlari()} />
 
         <Card>
           <CardHead

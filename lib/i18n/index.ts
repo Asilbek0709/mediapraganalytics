@@ -16,6 +16,7 @@ import { izoh } from "./matnlar/izoh";
 import { mediabazaMatnlari } from "./matnlar/mediabaza";
 import { metodikaMatnlari } from "./matnlar/metodika";
 import { misollarMatnlari } from "./matnlar/misollar";
+import { nashrHisobotMatnlari } from "./matnlar/nashrHisobot";
 import { nav } from "./matnlar/nav";
 import { rasmMatnlari } from "./matnlar/rasm";
 import { tahlilMatnlari } from "./matnlar/tahlil";
@@ -28,7 +29,7 @@ import type { Til } from "./til";
 const BOLIMLAR = [
   umumiy, nav, xato, izoh, vaqt, dashboardMatnlari, mediabazaMatnlari, importMatnlari, tahlilMatnlari,
   analitikaMatnlari, ahamiyatMatnlari, metodikaMatnlari, ekspertMatnlari, hisobotMatnlari, excelMatnlari, rasmMatnlari,
-  misollarMatnlari, zaxiraMatnlari, davrMatnlari,
+  misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari,
 ] as const;
 
 type Bolim = (typeof BOLIMLAR)[number];

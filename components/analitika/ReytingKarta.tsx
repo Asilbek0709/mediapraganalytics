@@ -31,6 +31,10 @@ export function ReytingKarta({ a, korsatkichNomi }: { a: Analitika; korsatkichNo
   const nashrlar = useMemo(() => nashrReytingi(a.kesimlar.nashr, k), [a.kesimlar.nashr, k]);
   const materiallar = useMemo(() => materialReytingi(a.materiallar, k, SONI), [a.materiallar, k]);
   const qisqa = k === "lpsi" ? "LPSI" : k.toUpperCase();
+  // Nashr hisoboti (PDF) sahifadagi davr filtri bilan
+  const nashrIdlari = new Map(a.tanlovlar.nashrlar.map((n) => [n.nomi, n.id]));
+  const davrQs = new URLSearchParams(Object.entries({ dan: a.filtr.dan, gacha: a.filtr.gacha }).filter((x): x is [string, string] => !!x[1])).toString();
+  const hisobotHavolasi = (id: number) => `/api/nashrlar/${id}/hisobot${davrQs ? `?${davrQs}` : ""}`;
 
   const rasm = (): RasmMalumot => ({
     sarlavha: t("ry.rasm", { k: korsatkichNomi(k) }),
@@ -84,6 +88,7 @@ export function ReytingKarta({ a, korsatkichNomi }: { a: Analitika; korsatkichNo
                       <th className="num">{t("u.soni")}</th>
                       <th>{korsatkichNomi(k)}</th>
                       {k === "lpsi" && <th>{t("u.daraja")}</th>}
+                      <th />
                     </tr>
                   </thead>
                   <tbody>
@@ -118,6 +123,19 @@ export function ReytingKarta({ a, korsatkichNomi }: { a: Analitika; korsatkichNo
                             <DarajaBadge daraja={r.daraja} shkala={a.shkala} faqatDaraja />
                           </td>
                         )}
+                        <td className="text-right">
+                          {nashrIdlari.get(r.nomi) && (
+                            <a
+                              className="btn btn-ghost btn-sm"
+                              href={hisobotHavolasi(nashrIdlari.get(r.nomi)!)}
+                              target="_blank"
+                              rel="noopener"
+                              title={t("nh.pdfTitle")}
+                            >
+                              PDF
+                            </a>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
