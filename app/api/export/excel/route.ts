@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    await apiTalab(["admin", "kuzatuvchi"]);
-    const { buf, fayl } = await excelHisobot(await joriyTil());
+    const f = await apiTalab(["admin", "ekspert", "kuzatuvchi"]);
+    const { buf, fayl } = await excelHisobot(await joriyTil(), { ekspertUchun: f.rol === "ekspert" });
     return new Response(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

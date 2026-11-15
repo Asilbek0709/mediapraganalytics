@@ -13,17 +13,27 @@ after(() => db.bazaniYopish());
 
 describe("Huquqlar jadvali", () => {
   it("yopiq standart: jadvalda yo‘q yo‘l faqat administratorga", () => {
-    for (const yol of ["/mediabaza", "/metodika", "/ekspertlar", "/foydalanuvchilar", "/api/zaxira", "/api/materiallar", "/api/yangi-nomalum"]) {
+    for (const yol of ["/foydalanuvchilar", "/api/foydalanuvchilar", "/api/zaxira", "/mediabaza/import", "/api/yangi-nomalum"]) {
       assert.ok(ruxsatmi("admin", yol));
       assert.ok(!ruxsatmi("ekspert", yol), yol);
       assert.ok(!ruxsatmi("kuzatuvchi", yol), yol);
     }
   });
 
+  it("ekspert hamma bo‘limni ko‘radi (foydalanuvchilardan tashqari), lekin o‘zgartira olmaydi", () => {
+    for (const yol of ["/", "/mediabaza", "/analitika", "/misollar", "/metodika", "/ekspertlar", "/hisobot", "/api/materiallar", "/api/dashboard", "/api/export/excel"]) {
+      assert.ok(ruxsatmi("ekspert", yol, "GET"), yol);
+    }
+    for (const [yol, usul] of [["/api/materiallar", "POST"], ["/api/materiallar/5", "PUT"], ["/api/materiallar/5", "DELETE"], ["/api/metodika", "PUT"], ["/api/ekspertlar", "POST"], ["/api/vaznlar/qollash", "POST"], ["/api/misollar/tanlangan", "PUT"], ["/api/materiallar/5/pdf", "GET"]]) {
+      assert.ok(!ruxsatmi("ekspert", yol, usul), `${usul} ${yol}`);
+    }
+    // ko‘rish sahifalari kuzatuvchiga ochilmadi
+    for (const yol of ["/mediabaza", "/metodika", "/ekspertlar"]) assert.ok(!ruxsatmi("kuzatuvchi", yol), yol);
+  });
+
   it("kuzatuvchi — faqat ko‘rish; ekspert — o‘z ish joyi", () => {
     for (const yol of ["/", "/analitika", "/misollar", "/hisobot", "/api/export/excel", "/api/nashrlar/3/hisobot"]) {
       assert.ok(ruxsatmi("kuzatuvchi", yol), yol);
-      assert.ok(!ruxsatmi("ekspert", yol), yol);
     }
     assert.ok(!ruxsatmi("kuzatuvchi", "/api/misollar/tanlangan", "PUT"));
     assert.ok(!ruxsatmi("kuzatuvchi", "/api/dashboard", "POST"));
@@ -42,8 +52,9 @@ describe("Huquqlar jadvali", () => {
     assert.equal(qaytishManzili("//evil.example/x", "admin"), "/");
     assert.equal(qaytishManzili("https://evil.example", "admin"), "/");
     assert.equal(qaytishManzili("/api/zaxira", "admin"), "/");
-    assert.equal(qaytishManzili(null, "ekspert"), "/vazifalar");
-    assert.equal(boshSahifa("ekspert"), "/vazifalar");
+    assert.equal(qaytishManzili(null, "ekspert"), "/");
+    assert.equal(boshSahifa("ekspert"), "/");
+    assert.equal(qaytishManzili("/foydalanuvchilar", "ekspert"), "/");
     assert.ok(ochiqmi("/kirish") && ochiqmi("/api/kirish") && !ochiqmi("/"));
   });
 });

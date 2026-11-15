@@ -11,7 +11,7 @@ const sanami = (v: string | null) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : u
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
-    await apiTalab(["admin", "kuzatuvchi"]);
+    await apiTalab(["admin", "ekspert", "kuzatuvchi"]);
     const sp = new URL(req.url).searchParams;
     const { pdf, fayl } = await nashrHisobotiPdf(raqam(id), { dan: sanami(sp.get("dan")), gacha: sanami(sp.get("gacha")) }, await joriyTil());
     return new Response(new Uint8Array(pdf), {

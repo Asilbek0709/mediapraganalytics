@@ -12,7 +12,7 @@ export default async function MisollarSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await sahifaTalab(["admin", "kuzatuvchi"]);
+  await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const filtr = misolFiltriniOqish(await searchParams);
   // Havola orqali boshqa filtr bilan kelinganda ko‘rinish shu filtrdan qayta boshlanadi
   return <MisollarView key={misolFiltriQatori(filtr)} korpus={await misollarKorpusi()} boshFiltr={filtr} />;

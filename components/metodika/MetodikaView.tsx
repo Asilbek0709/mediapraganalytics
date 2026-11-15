@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { Card, CardHead, Reveal, Stagger } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -35,6 +36,7 @@ function formaDan(met: MetodikaTolik): Forma {
 }
 
 export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: MetodikaTarix[] }) {
+  const { admin } = useFoydalanuvchi();
   const toast = useToast();
   const router = useRouter();
   const { t, son, atama, til } = useTil();
@@ -96,10 +98,12 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
         <div className="eyebrow">{t("mt.eyebrow")}</div>
         <h1 className="mt-1.5 flex flex-wrap items-center gap-3">
           {t("nav.metodika")} <span className="tag">{t("mt.joriyVersiya", { v: met.versiya })}</span>
+          {!admin && <span className="tag">{t("nav.faqatKorish")}</span>}
         </h1>
         <p className="hint mt-2 max-w-[74ch]">{t("mt.izoh")}</p>
       </motion.header>
 
+      <fieldset disabled={!admin} className="m-0 min-w-0 border-0 p-0">
       <Stagger className="flex flex-col gap-4">
         <Card variants={fadeUp} koarish={false}>
           <CardHead
@@ -372,6 +376,7 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
           </div>
         </Card>
 
+        {admin && (
         <Card variants={fadeUp} koarish={false}>
           <CardHead title={t("mt.yangiVersiya")} />
           <div className="flex flex-wrap items-end gap-3">
@@ -397,7 +402,9 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
             )}
           </AnimatePresence>
         </Card>
+        )}
       </Stagger>
+      </fieldset>
 
       <Reveal>
         <Card variants={fadeUp} koarish={false}>
@@ -429,7 +436,7 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
                     </td>
                     <td>
                       <div className="flex justify-end">
-                        {v.versiya !== met.versiya && v.snapshot.vaznlar && (
+                        {admin && v.versiya !== met.versiya && v.snapshot.vaznlar && (
                           <button className="btn btn-sm" onClick={() => tarixdanYuklash(v)}>
                             {t("mt.formagaYuklash")}
                           </button>

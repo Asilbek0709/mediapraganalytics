@@ -35,6 +35,7 @@ const kichik = (s: string) => s.toLocaleLowerCase().replace(/[‘’ʻʼ`']/g, "
 /** Tezkor qidiruv (Ctrl+K): bo‘limlar, materiallar (administrator) va amallar — klaviaturadan boshqariladi. */
 export function Buyruqlar() {
   const { f, admin } = useFoydalanuvchi();
+  const materialQidiruvi = f?.rol === "admin" || f?.rol === "ekspert";
   const { t, til, setTil, mavzu, setMavzu } = useTil();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -80,7 +81,7 @@ export function Buyruqlar() {
   // Materiallar serverda qidiriladi (sarlavha, lid, matn) — yozish to‘xtagach
   useEffect(() => {
     const soz = q.trim();
-    if (!ochiq || !admin || soz.length < 2) {
+    if (!ochiq || !materialQidiruvi || soz.length < 2) {
       setMateriallar([]);
       setIzlanmoqda(false);
       return;
@@ -103,7 +104,7 @@ export function Buyruqlar() {
       ctrl.abort();
       window.clearTimeout(taymer);
     };
-  }, [q, ochiq, admin]);
+  }, [q, ochiq, materialQidiruvi]);
 
   const yop = useCallback(() => setOchiq(false), []);
   const ot = useCallback(
@@ -201,7 +202,7 @@ export function Buyruqlar() {
   const guruhlar = (["bolim", "material", "amal"] as Guruh[])
     .map((g) => ({ g, el: elementlar.map((e, i) => ({ e, i })).filter((x) => x.e.guruh === g) }))
     .filter((x) => x.el.length);
-  const materialIzohi = admin && q.trim().length < 2;
+  const materialIzohi = materialQidiruvi && q.trim().length < 2;
 
   return createPortal(
     <AnimatePresence>

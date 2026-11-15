@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 /** Ikki davrni taqqoslash: a_dan, a_gacha, b_dan, b_gacha + Analitika filtrlari (turi, nashr_id, janr, dan, gacha). */
 export async function GET(req: Request) {
   try {
-    await apiTalab(["admin", "kuzatuvchi"]);
+    await apiTalab(["admin", "ekspert", "kuzatuvchi"]);
     const sp = new URL(req.url).searchParams;
     const filtr = filtrniTekshirish(Object.fromEntries(sp));
     const A = { dan: sp.get("a_dan") ?? "", gacha: sp.get("a_gacha") ?? "" };

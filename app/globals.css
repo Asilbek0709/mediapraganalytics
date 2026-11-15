@@ -1164,3 +1164,18 @@ mark.hl.yangi { animation: hl-pulse 0.9s ease-out; }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* faqat ko‘rish uchun (masalan, ekspertga metodika): maydon qiymati o‘qiladi, tahrirlab bo‘lmaydi */
+input:disabled,
+select:disabled,
+textarea:disabled,
+input:disabled:hover,
+select:disabled:hover,
+textarea:disabled:hover {
+  cursor: default;
+  color: var(--ink);
+  opacity: 1;
+  background: color-mix(in oklab, var(--surface-2) 70%, transparent);
+  border-color: var(--line);
+  box-shadow: none;
+}

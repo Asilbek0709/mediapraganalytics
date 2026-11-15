@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const generateMetadata = () => sahifaSarlavhasi("nav.metodika");
 
 export default async function MetodikaSahifasi() {
-  await sahifaTalab(["admin"]);
+  await sahifaTalab(["admin", "ekspert"]);
   const [met, tarix] = await Promise.all([metodikaTolik(), metodikaTarixi()]);
   return <MetodikaView met={met} tarix={tarix} />;
 }

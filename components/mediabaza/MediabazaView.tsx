@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { DarajaBadge, HolatTag } from "@/components/ui/Badge";
 import { Card, CardHead } from "@/components/ui/Card";
@@ -50,6 +51,8 @@ export function MediabazaView({
   const router = useRouter();
   const toast = useToast();
   const { t, atama, media, mediaQ } = useTil();
+  // ekspert — faqat ko‘radi va o‘z tahliliga o‘tadi (asosiy tahlil PDF’i va tahrirlash — administratorga)
+  const { admin } = useFoydalanuvchi();
 
   const [nashrlar, setNashrlar] = useState(dastlabkiNashrlar);
   const [rows, setRows] = useState(boshlangich);
@@ -191,9 +194,13 @@ export function MediabazaView({
       >
         <div>
           <div className="eyebrow">{t("mb.eyebrow")}</div>
-          <h1 className="mt-1.5">{t("nav.mediabaza")}</h1>
+          <h1 className="mt-1.5 flex flex-wrap items-center gap-3">
+            {t("nav.mediabaza")}
+            {!admin && <span className="tag">{t("nav.faqatKorish")}</span>}
+          </h1>
           <p className="hint mt-2">{t("mb.izoh")}</p>
         </div>
+        {admin && (
         <div className="flex flex-wrap gap-2.5">
           <motion.div {...pressable}>
             <Link className="btn" href="/mediabaza/import">
@@ -207,6 +214,7 @@ export function MediabazaView({
             {t("mb.yangi")}
           </motion.button>
         </div>
+        )}
       </motion.header>
 
       <Card koarish={false} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
@@ -312,17 +320,21 @@ export function MediabazaView({
                         <Link className="btn btn-sm btn-primary" href={`/tahlil/${m.id}`}>
                           {t("mb.tahlil")}
                         </Link>
-                        {m.tahlil_bor ? (
+                        {admin && m.tahlil_bor ? (
                           <a className="btn btn-sm" href={`/api/materiallar/${m.id}/pdf`} target="_blank" rel="noopener">
                             PDF
                           </a>
                         ) : null}
-                        <button className="btn btn-sm" onClick={() => tahrirlash(m.id)}>
-                          {t("u.tahrirlash")}
-                        </button>
-                        <button className="btn btn-sm btn-danger" onClick={() => ochirish(m)}>
-                          {t("u.ochirish")}
-                        </button>
+                        {admin && (
+                          <>
+                            <button className="btn btn-sm" onClick={() => tahrirlash(m.id)}>
+                              {t("u.tahrirlash")}
+                            </button>
+                            <button className="btn btn-sm btn-danger" onClick={() => ochirish(m)}>
+                              {t("u.ochirish")}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </motion.tr>

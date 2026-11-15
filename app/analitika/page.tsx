@@ -11,7 +11,7 @@ export default async function AnalitikaSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await sahifaTalab(["admin", "kuzatuvchi"]);
+  await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const filtr = filtrniTekshirish(await searchParams);
   const a = await analitika(filtr);
   // Filtr o‘zgarganda ko‘rinish qayta tug‘iladi va animatsiyalar yangidan ijro etiladi

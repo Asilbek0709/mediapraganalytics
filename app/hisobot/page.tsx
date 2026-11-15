@@ -31,7 +31,7 @@ const VARAQLAR = [
 ] as const;
 
 export default async function HisobotSahifasi() {
-  const f = await sahifaTalab(["admin", "kuzatuvchi"]);
+  const f = await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const admin = f.rol === "admin";
   const { t } = await serverTarjimon();
   const d = await dashboard();
@@ -64,7 +64,7 @@ export default async function HisobotSahifasi() {
                 </tr>
               </thead>
               <tbody>
-                {VARAQLAR.map((v) => (
+                {VARAQLAR.filter((v) => f.rol !== "ekspert" || v !== "tahlil").map((v) => (
                   <tr key={v}>
                     <td className="font-bold">{t(`xl.v.${v}` as Kalit)}</td>
                     <td>{t(`hs.m.${v}` as Kalit)}</td>

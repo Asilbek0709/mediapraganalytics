@@ -190,7 +190,11 @@ async function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon)
   });
 }
 
-export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: string }> {
+/**
+ * `ekspertUchun` — ekspert yuklaganda: asosiy tahlilning har bir material bo‘yicha varag‘i va
+ * boshqa ekspertlarning shaxsiy vaznlari kiritilmaydi (mustaqil baholash uchun); umumiy natijalar qoladi.
+ */
+export async function excelHisobot(til: Til, { ekspertUchun = false }: { ekspertUchun?: boolean } = {}): Promise<{ buf: Buffer; fayl: string }> {
   const tr = tarjimon(til);
   const { t, atama, media, son } = tr;
   const m = await metodikaniYuklash();
@@ -233,6 +237,8 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   bezash(ws1, [10, 20, 13, 12, 14, 18, 30, 50, 50, 18]);
 
   // 2. Tahlil natijalari
+  const kategoriyalar = Object.values(m.kategoriyalar);
+  if (!ekspertUchun) {
   const tahlillar = await all<{
     id: number; nashr: string; media_turi: string; janr: string | null; sarlavha_turlari: string;
     sar_lid: string | null; lid_matn: string | null; sar_matn: string | null; kompozitsiya: string | null;
@@ -245,7 +251,6 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
      FROM tahlillar t JOIN materiallar m ON m.id = t.material_id
      JOIN nashrlar n ON n.id = m.nashr_id ORDER BY m.id`,
   );
-  const kategoriyalar = Object.values(m.kategoriyalar);
   const ws2 = wb.addWorksheet(t("xl.v.tahlil"));
   ws2.addRow([
     "ID", t("u.nashr"), t("u.mediaTuri"), t("u.janr"), t("xl.sarlavhaTuri"), t("iz.sar_lid"), t("iz.lid_matn"),
@@ -273,6 +278,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
     ]);
   }
   bezash(ws2, [10, 20, 13, 14, 26, 16, 16, 18, 20, 16, ...kategoriyalar.map(() => 16), 10, 10, 10, 10, 10, 10, 14, 14, 40]);
+  }
 
   // 3–5. Kesimlar
   const kesimlar: [string, string, Kesim[], (k: Kesim) => string][] = [
@@ -367,10 +373,12 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
 
   const vz = await vaznTahlili();
   const wsV = wb.addWorksheet(t("xl.v.vaznlar"));
-  wsV.addRow([t("xl.ekspert"), "K1", "K2", "K3", "K4", "K5", t("u.izoh")]);
-  for (const v of vz.vaznlar) wsV.addRow([v.ism, v.vaznlar.K1, v.vaznlar.K2, v.vaznlar.K3, v.vaznlar.K4, v.vaznlar.K5, v.izoh]);
+  if (!ekspertUchun) {
+    wsV.addRow([t("xl.ekspert"), "K1", "K2", "K3", "K4", "K5", t("u.izoh")]);
+    for (const v of vz.vaznlar) wsV.addRow([v.ism, v.vaznlar.K1, v.vaznlar.K2, v.vaznlar.K3, v.vaznlar.K4, v.vaznlar.K5, v.izoh]);
+  }
   bezash(wsV, [30, 12, 12, 12, 12, 12, 30]);
-  wsV.addRow([]);
+  if (!ekspertUchun) wsV.addRow([]);
   const jSarlavha = wsV.addRow([
     t("u.mezon"), t("xl.joriy"), t("xl.ortacha"), t("xl.mediana"), "SD", "CV, %", "Min", "Max", t("xl.ortRang"), t("xl.taklif"),
   ]);

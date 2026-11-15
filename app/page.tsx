@@ -5,7 +5,7 @@ import { sahifaTalab } from "@/lib/sessiya";
 export const dynamic = "force-dynamic";
 
 export default async function BoshPanel() {
-  await sahifaTalab(["admin", "kuzatuvchi"]);
+  await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const d = await dashboard();
   return <DashboardView d={d} />;
 }

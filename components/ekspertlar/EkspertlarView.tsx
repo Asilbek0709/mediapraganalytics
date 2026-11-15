@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { Card, CardHead, Reveal, Stagger } from "@/components/ui/Card";
@@ -98,6 +99,9 @@ export function EkspertlarView({
   const pathname = usePathname();
   const tr = useTil();
   const { t, son, atama } = tr;
+  // ekspert: ro‘yxat va umumiy natijalarni ko‘radi; boshqa ekspertlarning vaznlari va
+  // material bo‘yicha taqqoslash — mustaqillik uchun yashirin, tahrirlash — faqat administratorga
+  const { admin } = useFoydalanuvchi();
   const [pending, startTransition] = useTransition();
   const pQiymat = (p: number) => (p < 0.001 ? `< ${son(0.001, 3)}` : son(p, 3));
 
@@ -131,7 +135,10 @@ export function EkspertlarView({
     <div className="flex flex-col gap-5">
       <motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <div className="eyebrow">{t("eks.eyebrow")}</div>
-        <h1 className="mt-1.5">{t("nav.ekspertlar")}</h1>
+        <h1 className="mt-1.5 flex flex-wrap items-center gap-3">
+          {t("nav.ekspertlar")}
+          {!admin && <span className="tag">{t("nav.faqatKorish")}</span>}
+        </h1>
         <p className="hint mt-2 max-w-[80ch]">{t("eks.izoh")}</p>
       </motion.header>
 
@@ -148,7 +155,7 @@ export function EkspertlarView({
                     <th>{t("eks.izohUstun")}</th>
                     <th className="num">{t("eks.tahlillar")}</th>
                     <th>{t("eks.vaznlar")}</th>
-                    <th />
+                    {admin && <th />}
                   </tr>
                 </thead>
                 <tbody>
@@ -173,6 +180,7 @@ export function EkspertlarView({
                           </td>
                           <td className="num">{e.tahlillar_soni}</td>
                           <td>{e.vazn_bor ? <span className="tag">{t("eks.toldirilgan")}</span> : <span className="hint">{t("eks.yoq")}</span>}</td>
+                          {admin && (
                           <td>
                             <div className="flex justify-end gap-1.5">
                               {ta ? (
@@ -211,13 +219,14 @@ export function EkspertlarView({
                               </button>
                             </div>
                           </td>
+                          )}
                         </motion.tr>
                       );
                     })}
                   </AnimatePresence>
                   {!ekspertlar.length && (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center" style={{ color: "var(--muted)" }}>
+                      <td colSpan={admin ? 5 : 4} className="py-8 text-center" style={{ color: "var(--muted)" }}>
                         {t("eks.haliYoq")}
                       </td>
                     </tr>
@@ -225,6 +234,8 @@ export function EkspertlarView({
                 </tbody>
               </table>
             </div>
+            {admin && (
+            <>
             <div className="mt-4 flex flex-wrap items-end gap-3">
               <label className="field min-w-[200px] flex-1">
                 <span>{t("eks.ism")}</span>
@@ -248,11 +259,14 @@ export function EkspertlarView({
               </motion.button>
             </div>
             <p className="hint mt-3">{t("eks.qandayKodlaydi")}</p>
+            </>
+            )}
           </Card>
         </Stagger>
 
         {/* ------------------------------------------------ vaznlar so‘rovi */}
         <Reveal className="flex flex-col gap-4">
+          {admin && (
           <Card variants={fadeUp} koarish={false}>
             <CardHead
               title={t("eks.sorov")}
@@ -343,6 +357,7 @@ export function EkspertlarView({
               </div>
             )}
           </Card>
+          )}
 
           {vazn.vaznlar.length > 0 && (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -424,6 +439,7 @@ export function EkspertlarView({
                       {k.p < 0.05 ? t("eks.ahamiyatli") : t("eks.ahamiyatsiz")}
                     </p>
                     {k.m < 3 && <p className="hint mt-2">{t("eks.kamida3")}</p>}
+                    {admin && (
                     <motion.button
                       className="btn btn-primary mt-4 w-full"
                       {...pressable}
@@ -438,6 +454,7 @@ export function EkspertlarView({
                     >
                       {t("eks.qollash")}
                     </motion.button>
+                    )}
                   </>
                 ) : (
                   <p className="hint py-6 text-center">{t("eks.kendallKam")}</p>
@@ -549,7 +566,7 @@ export function EkspertlarView({
             )}
           </Card>
 
-          {kelishuv.royxat.length > 0 && (
+          {admin && kelishuv.royxat.length > 0 && (
             <Card variants={fadeUp} koarish={false}>
               <CardHead title={t("eks.kopBaholovchi")} />
               <div className="table-wrap">

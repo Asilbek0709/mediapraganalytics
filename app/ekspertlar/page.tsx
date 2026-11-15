@@ -12,7 +12,7 @@ export default async function EkspertlarSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await sahifaTalab(["admin"]);
+  await sahifaTalab(["admin", "ekspert"]);
   const sp = await searchParams;
   const [ekspertlar, vazn, kelishuv] = await Promise.all([ekspertlarRoyxati(), vaznTahlili(), umumiyKelishuv(sp.asosiy !== "0")]);
   return (

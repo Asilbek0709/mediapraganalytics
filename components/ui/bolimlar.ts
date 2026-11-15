@@ -23,13 +23,13 @@ export interface Bolim {
 /** Platforma bo‘limlari — yon menyu va tezkor qidiruv uchun umumiy ro‘yxat. */
 export const BOLIMLAR: Bolim[] = [
   { href: "/", kalit: "nav.bosh", belgi: LayoutDashboard },
+  { href: "/vazifalar", kalit: "nav.vazifalar", belgi: ClipboardCheck },
   { href: "/mediabaza", kalit: "nav.mediabaza", belgi: Newspaper },
   { href: "/analitika", kalit: "nav.analitika", belgi: ChartNoAxesCombined },
   { href: "/misollar", kalit: "nav.misollar", belgi: Quote },
   { href: "/metodika", kalit: "nav.metodika", belgi: FlaskConical },
   { href: "/ekspertlar", kalit: "nav.ekspertlar", belgi: UsersRound },
   { href: "/hisobot", kalit: "nav.hisobot", belgi: FileChartColumn },
-  { href: "/vazifalar", kalit: "nav.vazifalar", belgi: ClipboardCheck },
   { href: "/foydalanuvchilar", kalit: "nav.foydalanuvchilar", belgi: UserCog },
 ];
 

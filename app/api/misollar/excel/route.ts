@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** Sahifadagi bilan bir xil filtr va tartib (URL parametrlari) bo‘yicha Excel. */
 export async function GET(req: Request) {
   try {
-    await apiTalab(["admin", "kuzatuvchi"]);
+    await apiTalab(["admin", "ekspert", "kuzatuvchi"]);
     const filtr = misolFiltriniOqish(new URL(req.url).searchParams);
     const misollar = misollarniFiltrlash((await misollarKorpusi()).misollar, filtr);
     const { buf, fayl } = await misollarExcel(await joriyTil(), misollar);

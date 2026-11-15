@@ -15,7 +15,7 @@ export const GET = (req: Request) => {
       dan: p.get("dan") ?? undefined,
       gacha: p.get("gacha") ?? undefined,
       holat: (p.get("holat") as Holat) || undefined,
-    }), 200, ["admin"],
+    }), 200, ["admin", "ekspert"],
   );
 };
 

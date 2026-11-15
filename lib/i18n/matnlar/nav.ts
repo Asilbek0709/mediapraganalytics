@@ -24,6 +24,7 @@ export const nav = lugat(
     "nav.menyu": "Menyu",
     "nav.menyuYigish": "Menyuni yig‘ish",
     "nav.menyuYoyish": "Menyuni yoyish",
+    "nav.faqatKorish": "Faqat ko‘rish",
   },
   {
     "nav.bosh": "Панель",
@@ -48,6 +49,7 @@ export const nav = lugat(
     "nav.menyu": "Меню",
     "nav.menyuYigish": "Свернуть меню",
     "nav.menyuYoyish": "Развернуть меню",
+    "nav.faqatKorish": "Только просмотр",
   },
   {
     "nav.bosh": "Dashboard",
@@ -72,5 +74,6 @@ export const nav = lugat(
     "nav.menyu": "Menu",
     "nav.menyuYigish": "Collapse menu",
     "nav.menyuYoyish": "Expand menu",
+    "nav.faqatKorish": "View only",
   },
 );

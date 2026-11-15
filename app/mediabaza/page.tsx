@@ -15,7 +15,7 @@ export default async function MediabazaSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await sahifaTalab(["admin"]);
+  const f = await sahifaTalab(["admin", "ekspert"]);
   const sp = await searchParams;
   const holat = HOLATLAR.find((h) => h === sp.holat);
 
@@ -31,7 +31,7 @@ export default async function MediabazaSahifasi({
       nashrlar={nashrlar}
       janrlar={janrRoyxati}
       shkala={m.shkala}
-      yangiOchiq={sp.yangi !== undefined}
+      yangiOchiq={f.rol === "admin" && sp.yangi !== undefined}
       boshlangichHolat={holat ?? ""}
     />
   );

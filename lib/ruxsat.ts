@@ -8,7 +8,10 @@ export type Rol = "admin" | "ekspert" | "kuzatuvchi";
 export const ROLLAR: Rol[] = ["admin", "ekspert", "kuzatuvchi"];
 
 const HAMMA: Rol[] = ["admin", "ekspert", "kuzatuvchi"];
-const OQUVCHI: Rol[] = ["admin", "kuzatuvchi"];
+/** ko‘rish: hamma rollar (ekspert ham — faqat o‘z qatlamini o‘zgartiradi) */
+const OQUVCHI: Rol[] = HAMMA;
+/** administrator va ekspert ko‘radigan bo‘limlar (kuzatuvchiga — yo‘q) */
+const ISHCHI: Rol[] = ["admin", "ekspert"];
 
 /** Kirishsiz ochiladigan yo‘llar */
 const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/sozlash$/];
@@ -25,7 +28,7 @@ const QOIDALAR: Qoida[] = [
   { yol: /^\/profil$/, rollar: HAMMA },
   { yol: /^\/api\/(chiqish|parol)$/, rollar: HAMMA },
 
-  // ko‘rish: administrator va kuzatuvchi
+  // ko‘rish: barcha rollar
   { yol: /^\/$/, rollar: OQUVCHI },
   { yol: /^\/analitika$/, rollar: OQUVCHI },
   { yol: /^\/misollar$/, rollar: OQUVCHI },
@@ -35,6 +38,12 @@ const QOIDALAR: Qoida[] = [
   { yol: /^\/api\/misollar\/excel$/, usul: ["GET"], rollar: OQUVCHI },
   { yol: /^\/api\/davrlar\/excel$/, usul: ["GET"], rollar: OQUVCHI },
   { yol: /^\/api\/nashrlar\/\d+\/hisobot$/, usul: ["GET"], rollar: OQUVCHI },
+
+  // ekspert faqat ko‘radi (tahrirlash tugmalari yashirin, o‘zgartiruvchi API — faqat admin)
+  { yol: /^\/mediabaza$/, usul: ["GET"], rollar: ISHCHI },
+  { yol: /^\/metodika$/, usul: ["GET"], rollar: ISHCHI },
+  { yol: /^\/ekspertlar$/, usul: ["GET"], rollar: ISHCHI },
+  { yol: /^\/api\/materiallar$/, usul: ["GET"], rollar: ISHCHI },
 
   // ekspert ish joyi (o‘z qatlami — sahifa/API ichida qo‘shimcha tekshiriladi)
   { yol: /^\/vazifalar$/, rollar: ["admin", "ekspert"] },
@@ -54,7 +63,7 @@ export function ruxsatmi(rol: Rol, yol: string, usul = "GET"): boolean {
 }
 
 /** Rol uchun bosh sahifa (kirgandan keyin yoki ruxsat bo‘lmagan sahifadan) */
-export const boshSahifa = (rol: Rol) => (rol === "ekspert" ? "/vazifalar" : "/");
+export const boshSahifa = (_rol: Rol) => "/";
 
 /** Kirgandan keyin qaytish manzili: faqat sayt ichidagi va shu rolga ochiq yo‘l */
 export function qaytishManzili(keyin: string | null | undefined, rol: Rol): string {
