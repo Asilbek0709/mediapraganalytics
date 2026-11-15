@@ -189,19 +189,23 @@ body {
   min-height: 100dvh;
 }
 
-h1,
-h2,
-h3 {
-  margin: 0;
-  line-height: 1.2;
-  letter-spacing: -0.015em;
+/* Element uslublari «base» qatlamida: aks holda (qatlamsiz) ular Tailwind utilitalaridan ustun turadi
+   va <p className="mt-3"> kabi oraliqlar, sarlavhalardagi o‘lcham klasslari e’tiborsiz qoladi. */
+@layer base {
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+  h1 { font-size: 26px; font-weight: 700; }
+  h2 { font-size: 17px; font-weight: 650; }
+  h3 { font-size: 14px; font-weight: 650; }
+  p { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
 }
-h1 { font-size: 26px; font-weight: 700; }
-h2 { font-size: 17px; font-weight: 650; }
-h3 { font-size: 14px; font-weight: 650; }
-p { margin: 0; }
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
 
 ::selection { background: var(--accent); color: #fff; }
 

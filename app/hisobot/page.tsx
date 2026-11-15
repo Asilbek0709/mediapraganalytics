@@ -17,6 +17,7 @@ const VARAQLAR = [
   "nashrlar",
   "media",
   "janrlar",
+  "reyting",
   "muammolar",
   "sarlavha",
   "dinamika",

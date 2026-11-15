@@ -10,6 +10,8 @@ import { LineChart } from "@/components/charts/LineChart";
 import { useTil } from "@/components/i18n/TilProvider";
 import { RasmTugmasi } from "@/components/rasm/RasmTugmasi";
 import { AhamiyatKarta } from "./AhamiyatKarta";
+import { DavrlarKarta } from "./DavrlarKarta";
+import { ReytingKarta } from "./ReytingKarta";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { DarajaBadge } from "@/components/ui/Badge";
 import { Card, CardHead, Reveal, Stagger } from "@/components/ui/Card";
@@ -84,7 +86,8 @@ export function AnalitikaView({ a }: { a: Analitika }) {
   };
   const qismHavolasi = (r: number, c: number) =>
     qismQatorlari[r] ? misolHavolasi({ kategoriya: qismQatorlari[r].kod, qism: (["sarlavha", "lid", "matn"] as const)[c] }) : null;
-  const korsatkichNomi = korsatkich === "lpsi" ? "LPSI" : `${korsatkich.toUpperCase()}. ${mezonNomi[korsatkich.toUpperCase()]}`;
+  const kNomi = (k: Korsatkich) => (k === "lpsi" ? "LPSI" : `${k.toUpperCase()}. ${mezonNomi[k.toUpperCase()]}`);
+  const korsatkichNomi = kNomi(korsatkich);
 
   // Dissertatsiya rasmlari: ekrandagi grafik bilan bir xil ma’lumot (tanlangan kesim, filtr, ko‘rsatkich)
   const taqqosRasmi = (): RasmMalumot => ({
@@ -298,6 +301,10 @@ export function AnalitikaView({ a }: { a: Analitika }) {
             </Reveal>
 
             <Reveal>
+              <ReytingKarta a={a} korsatkichNomi={kNomi} />
+            </Reveal>
+
+            <Reveal>
               <AhamiyatKarta a={a.ahamiyat} mezonlar={a.mezonlar} />
             </Reveal>
 
@@ -484,6 +491,10 @@ export function AnalitikaView({ a }: { a: Analitika }) {
                 )}
                 {a.sanasiz > 0 && <p className="hint mt-3">{t("an.sanasiz", { n: a.sanasiz })}</p>}
               </Card>
+            </Reveal>
+
+            <Reveal>
+              <DavrlarKarta a={a} korsatkichNomi={kNomi} />
             </Reveal>
           </>
         )}

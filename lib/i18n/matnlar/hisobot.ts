@@ -13,13 +13,14 @@ export const hisobotMatnlari = lugat(
     "hs.m.tahlil":
       "Har bir material bo‘yicha kodlash: sarlavha turi, muvofiqlik, kompozitsiya, auditoriya bahosi, kategoriyalar soni, K1–K5, LPSI, daraja",
     "hs.m.nashrlar": "Nashr bo‘yicha o‘rtacha K1–K5 va LPSI, har bir muammo uchragan materiallar ulushi (%)",
+    "hs.m.reyting": "Nashrlar o‘rni LPSI va har bir mezon (K1–K5) bo‘yicha; LPSI bo‘yicha eng yuqori va eng past 10 ta material",
     "hs.m.media": "Bosma va raqamli media taqqosi — xuddi shu ko‘rsatkichlar",
     "hs.m.janrlar": "Janr bo‘yicha taqqoslash",
     "hs.m.muammolar": "Har bir kategoriya: jami birliklar, sarlavha / lid / asosiy matnda taqsimlanishi, materiallar ulushi",
     "hs.m.sarlavha": "Har bir sarlavha turining ulushi: umumiy, bosma va raqamli media ichida",
     "hs.m.dinamika": "Oylar, choraklar va yillar bo‘yicha K1–K5 va LPSI o‘rtachasi (barcha / bosma / raqamli)",
     "hs.m.ahamiyat":
-      "Farqlarning statistik ahamiyati: bosma va raqamli (Mann–Whitney U, muammolar uchun Fisher testi), nashrlar va janrlar (Kruskal–Wallis H, Dunn post-hoc) — p, effekt hajmi, xulosa",
+      "Farqlarning statistik ahamiyati: bosma va raqamli (Mann–Whitney U, muammolar uchun Fisher testi), nashrlar, janrlar va yillar (Kruskal–Wallis H, Dunn post-hoc) — p, effekt hajmi, xulosa",
     "hs.m.kelishuv": "Har bir ko‘rsatkich bo‘yicha Krippendorff α, talqini, mos juftlar ulushi va o‘rtacha farq",
     "hs.m.vaznlar": "Ekspertlarning K1–K5 vaznlari, o‘rtacha / mediana / SD / CV, taklif etilgan vaznlar va Kendall W",
     "hs.m.metodika":
@@ -43,13 +44,14 @@ export const hisobotMatnlari = lugat(
     "hs.m.tahlil":
       "Разметка каждого материала: тип заголовка, соответствие, композиция, оценка аудитории, число категорий, K1–K5, LPSI, уровень",
     "hs.m.nashrlar": "Средние K1–K5 и LPSI по изданиям, доля материалов с каждой проблемой (%)",
+    "hs.m.reyting": "Места изданий по LPSI и по каждому критерию K1–K5; 10 лучших и 10 худших материалов по LPSI",
     "hs.m.media": "Сравнение печатных и цифровых СМИ — те же показатели",
     "hs.m.janrlar": "Сравнение по жанрам",
     "hs.m.muammolar": "Каждая категория: всего единиц, распределение по заголовку / лиду / основному тексту, доля материалов",
     "hs.m.sarlavha": "Доля каждого типа заголовка: в целом, среди печатных и цифровых СМИ",
     "hs.m.dinamika": "Средние K1–K5 и LPSI по месяцам, кварталам и годам (все / печатные / цифровые)",
     "hs.m.ahamiyat":
-      "Статистическая значимость различий: печатные и цифровые СМИ (Манн–Уитни, для проблем — критерий Фишера), издания и жанры (Краскел–Уоллис, пост-хок Данна) — p, размер эффекта, вывод",
+      "Статистическая значимость различий: печатные и цифровые СМИ (Манн–Уитни, для проблем — критерий Фишера), издания, жанры и годы (Краскел–Уоллис, пост-хок Данна) — p, размер эффекта, вывод",
     "hs.m.kelishuv": "α Криппендорфа по каждому показателю, интерпретация, доля совпадающих пар и средняя разница",
     "hs.m.vaznlar": "Веса K1–K5 от экспертов, среднее / медиана / SD / CV, предложенные веса и W Кендалла",
     "hs.m.metodika":
@@ -72,13 +74,14 @@ export const hisobotMatnlari = lugat(
     "hs.m.tahlil":
       "Coding of each material: headline type, coherence, composition, audience rating, category counts, K1–K5, LPSI, level",
     "hs.m.nashrlar": "Mean K1–K5 and LPSI by outlet, share of materials with each problem (%)",
+    "hs.m.reyting": "Outlet ranks by LPSI and by each criterion K1–K5; top and bottom 10 materials by LPSI",
     "hs.m.media": "Print vs digital media — the same indicators",
     "hs.m.janrlar": "Comparison by genre",
     "hs.m.muammolar": "Each category: total units, distribution across headline / lead / body text, share of materials",
     "hs.m.sarlavha": "Share of each headline type: overall and within print and digital media",
     "hs.m.dinamika": "Mean K1–K5 and LPSI by month, quarter and year (all / print / digital)",
     "hs.m.ahamiyat":
-      "Statistical significance of differences: print vs digital (Mann–Whitney U, Fisher’s test for problems), outlets and genres (Kruskal–Wallis H, Dunn post-hoc) — p, effect size, conclusion",
+      "Statistical significance of differences: print vs digital (Mann–Whitney U, Fisher’s test for problems), outlets, genres and years (Kruskal–Wallis H, Dunn post-hoc) — p, effect size, conclusion",
     "hs.m.kelishuv": "Krippendorff’s α for each indicator, interpretation, share of matching pairs and mean difference",
     "hs.m.vaznlar": "Experts’ K1–K5 weights, mean / median / SD / CV, proposed weights and Kendall’s W",
     "hs.m.metodika":

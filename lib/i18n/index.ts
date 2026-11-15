@@ -7,6 +7,7 @@ import { atamalar, type Atamalar } from "./atamalar";
 import { ahamiyatMatnlari } from "./matnlar/ahamiyat";
 import { analitikaMatnlari } from "./matnlar/analitika";
 import { dashboardMatnlari } from "./matnlar/dashboard";
+import { davrMatnlari } from "./matnlar/davr";
 import { ekspertMatnlari } from "./matnlar/ekspert";
 import { excelMatnlari } from "./matnlar/excel";
 import { hisobotMatnlari } from "./matnlar/hisobot";
@@ -27,7 +28,7 @@ import type { Til } from "./til";
 const BOLIMLAR = [
   umumiy, nav, xato, izoh, vaqt, dashboardMatnlari, mediabazaMatnlari, importMatnlari, tahlilMatnlari,
   analitikaMatnlari, ahamiyatMatnlari, metodikaMatnlari, ekspertMatnlari, hisobotMatnlari, excelMatnlari, rasmMatnlari,
-  misollarMatnlari, zaxiraMatnlari,
+  misollarMatnlari, zaxiraMatnlari, davrMatnlari,
 ] as const;
 
 type Bolim = (typeof BOLIMLAR)[number];

@@ -84,6 +84,8 @@ export interface Ahamiyat {
   media: { holat: BolimHolati; qatorlar: IkkiGuruhQatori[]; muammolar: MuammoTestQatori[] };
   nashr: KopGuruhBolimi;
   janr: KopGuruhBolimi;
+  /** yillar mustaqil guruhlar sifatida (sanasiz materiallar kirmaydi) */
+  yil: KopGuruhBolimi;
 }
 
 function ikkiGuruh(bosma: MaterialQator[], raqamli: MaterialQator[]): IkkiGuruhQatori[] {
@@ -117,14 +119,16 @@ function muammoTestlari(bosma: MaterialQator[], raqamli: MaterialQator[], m: Met
   return qatorlar.map((q, i) => ({ ...q, pHolm: tuzatilgan[i] }));
 }
 
-function kopGuruh(t: MaterialQator[], kalit: (q: MaterialQator) => string | null): KopGuruhBolimi {
+function kopGuruh(t: MaterialQator[], kalit: (q: MaterialQator) => string | null, xronologik = false): KopGuruhBolimi {
   const guruhlar = new Map<string, MaterialQator[]>();
   for (const q of t) {
     const k = kalit(q);
     if (k == null) continue;
     guruhlar.set(k, [...(guruhlar.get(k) ?? []), q]);
   }
-  const hammasi = [...guruhlar.entries()].map(([nomi, qs]) => ({ nomi, qs })).sort((a, b) => b.qs.length - a.qs.length);
+  const hammasi = [...guruhlar.entries()]
+    .map(([nomi, qs]) => ({ nomi, qs }))
+    .sort((a, b) => (xronologik ? a.nomi.localeCompare(b.nomi) : b.qs.length - a.qs.length));
   const kirgan = hammasi.filter((g) => g.qs.length >= MIN_GURUH);
   const chiqarilgan = hammasi.filter((g) => g.qs.length < MIN_GURUH).map((g) => ({ nomi: g.nomi, n: g.qs.length }));
   const tavsif = kirgan.map((g) => ({ nomi: g.nomi, n: g.qs.length }));
@@ -170,5 +174,6 @@ export function ahamiyatTestlari(
     nashr: filtr.nashr_id ? bosh : kopGuruh(t, (q) => q.nashr),
     // Janri ko‘rsatilmagan materiallar alohida janr emas — testga kirmaydi
     janr: filtr.janr ? bosh : kopGuruh(t, (q) => (q.janr && q.janr !== JANR_YOQ ? q.janr : null)),
+    yil: kopGuruh(t, (q) => (q.sana && /^\d{4}/.test(q.sana) ? q.sana.slice(0, 4) : null), true),
   };
 }

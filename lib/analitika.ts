@@ -6,7 +6,8 @@
  */
 import { ahamiyatTestlari, type Ahamiyat } from "./ahamiyat";
 import { all } from "./db";
-import { kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics";
+import { JANR_YOQ, kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics";
+import type { AnalitikaMateriali } from "./davrlar";
 import { metodikaniYuklash } from "./scoring";
 import type { Kategoriya, Kesim, MediaTuri, Mezon, Qism, ShkalaOraliq } from "./types";
 
@@ -68,6 +69,8 @@ export interface Analitika {
   sarlavhaTurlari: SarlavhaTuri[];
   dinamika: Record<Granulyatsiya, Dinamika>;
   ahamiyat: Ahamiyat;
+  /** filtrga mos, to‘liq tahlil qilingan materiallar — davrlarni taqqoslash va reyting uchun */
+  materiallar: AnalitikaMateriali[];
   shkala: ShkalaOraliq[];
   mezonlar: Mezon[];
   tanlovlar: { nashrlar: { id: number; nomi: string; turi: MediaTuri }[]; janrlar: string[] };
@@ -226,6 +229,23 @@ export function analitika(filtr: AnalitikaFiltr = {}): Analitika {
     sarlavhaTurlari,
     dinamika: { oy: dinamika(t, "oy"), chorak: dinamika(t, "chorak"), yil: dinamika(t, "yil") },
     ahamiyat: ahamiyatTestlari(t, m, filtr),
+    materiallar: t.map((q) => ({
+      id: q.id,
+      nashr_id: q.nashr_id,
+      nashr: q.nashr,
+      media_turi: q.media_turi,
+      sana: q.sana,
+      janr: q.janr ?? JANR_YOQ,
+      sarlavha: q.sarlavha,
+      k1: q.k1,
+      k2: q.k2,
+      k3: q.k3,
+      k4: q.k4,
+      k5: q.k5,
+      lpsi: q.lpsi,
+      daraja: q.daraja,
+      sanoq: q.sanoq,
+    })),
     shkala: m.shkala,
     mezonlar: all<Mezon>("SELECT * FROM mezonlar ORDER BY kod"),
     tanlovlar: {

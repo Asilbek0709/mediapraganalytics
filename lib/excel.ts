@@ -10,7 +10,9 @@ import { tarjimon, type Tarjimon } from "./i18n";
 import type { Til } from "./i18n/til";
 import { umumiyKelishuv } from "./kelishuv";
 import { guruhNomi, korsatkichNomi } from "./kelishuvNomlari";
+import { davrNomi, KORSATKICHLAR as DAVR_KORSATKICHLARI, type AnalitikaMateriali, type DavrTaqqos } from "./davrlar";
 import type { Misol } from "./misollar";
+import { materialReytingi, MIN_REYTING, nashrReytingi } from "./reyting";
 import { metodikaniYuklash } from "./scoring";
 import type { Kesim, Metodika } from "./types";
 
@@ -56,6 +58,46 @@ function kesimUstunlari(m: Metodika, birinchi: string, tr: Tarjimon) {
   ];
   const kengliklar = [26, 16, ...Array(7).fill(14), 14, ...muammolar.map(() => 18)];
   return { head, qator, kengliklar };
+}
+
+function reytingVaragi(ws: ExcelJS.Worksheet, nashrlar: Kesim[], materiallar: AnalitikaMateriali[], tr: Tarjimon) {
+  const { t, atama, media } = tr;
+  const ks = ["k1", "k2", "k3", "k4", "k5"] as const;
+  ws.addRow([
+    `${t("ry.orin")} (LPSI)`, t("u.nashr"), t("u.mediaTuri"), t("xl.materiallarSoni"), "LPSI", t("u.daraja"),
+    ...ks.flatMap((k) => [k.toUpperCase(), t("ry.x.orinK", { k: k.toUpperCase() })]),
+  ]);
+  const orinlar = Object.fromEntries(ks.map((k) => [k, new Map(nashrReytingi(nashrlar, k).map((r) => [r.nomi, r.orin]))]));
+  const asosiy = nashrReytingi(nashrlar, "lpsi");
+  if (!asosiy.length) ws.addRow([t("xl.hozirchaYoq")]);
+  for (const r of asosiy) {
+    const n = nashrlar.find((x) => x.nomi === r.nomi)!;
+    ws.addRow([
+      r.orin, r.kam ? `${r.nomi}*` : r.nomi, media(r.media_turi), r.soni, r.qiymat, atama.daraja(r.daraja),
+      ...ks.flatMap((k) => [n[k], orinlar[k].get(r.nomi) ?? null]),
+    ]);
+  }
+  bezash(ws, [12, 22, 13, 14, 10, 14, ...ks.flatMap(() => [9, 11])]);
+  ws.views = [{ state: "frozen", xSplit: 2, ySplit: 1 }];
+
+  const SONI = 10;
+  const mr = materialReytingi(materiallar, "lpsi", SONI);
+  if (mr.yuqori.length) {
+    ws.addRow([]);
+    ws.addRow([t("ry.x.materiallar", { n: SONI })]).font = { bold: true, size: 12 };
+    const h = ws.addRow([t("ry.orin"), "LPSI", t("u.daraja"), t("u.sarlavha"), t("u.nashr"), t("u.sana"), "ID"]);
+    h.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    h.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SARLAVHA_RANGI } };
+    const qator = (x: (typeof mr.yuqori)[number]) =>
+      ws.addRow([x.orin, x.qiymat, atama.daraja(x.m.daraja), x.m.sarlavha, x.m.nashr, x.m.sana, String(x.m.id).padStart(5, "0")]);
+    mr.yuqori.forEach(qator);
+    if (!mr.toliq) {
+      ws.addRow(["…"]);
+      [...mr.past].reverse().forEach(qator);
+    }
+  }
+  ws.addRow([]);
+  ws.addRow([t("ry.x.kamIzoh", { m: MIN_REYTING })]).font = { italic: true };
 }
 
 function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon) {
@@ -139,6 +181,8 @@ function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon) {
   };
   kopGuruh(t("ah.t.nashr"), ah.nashr, (n) => n);
   kopGuruh(t("ah.t.janr"), ah.janr, (n) => atama.janr(n));
+  kopGuruh(t("ah.t.yil"), ah.yil, (n) => n);
+  ws.addRow([t("ah.izohYil")]);
   ws.addRow([t("ah.izohKop")]);
 
   [34, 14, 12, 14, 12, 12, 12, 14, 14, 12, 16, 40].forEach((w, i) => {
@@ -245,6 +289,10 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
     bezash(ws, kengliklar);
   }
 
+  // Reyting: nashrlar o‘rni (LPSI va K1–K5), eng yuqori va eng past materiallar
+  const a = analitika();
+  reytingVaragi(wb.addWorksheet(t("xl.v.reyting")), a.kesimlar.nashr, a.materiallar, tr);
+
   // 6. Muammolar chastotasi
   const ws6 = wb.addWorksheet(t("xl.v.muammolar"));
   ws6.addRow([
@@ -267,7 +315,6 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   bezash(ws6, [30, 22, 10, 16, 14, 12, 16, 18, 16]);
 
   // 7–8. Sarlavha turlari va dinamika
-  const a = analitika();
   const wsS = wb.addWorksheet(t("xl.v.sarlavha"));
   wsS.addRow([t("xl.sarlavhaTuri"), t("xl.materiallarSoni"), t("u.foizMateriallar"), t("xl.bosmaFoiz"), t("xl.raqamliFoiz")]);
   for (const s of a.sarlavhaTurlari) wsS.addRow([atama.lugat("sarlavha_turi", s.kod, s.nomi), s.soni, s.ulush, s.bosma, s.raqamli]);
@@ -445,4 +492,71 @@ export async function misollarExcel(til: Til, misollar: Misol[]): Promise<{ buf:
 
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   return { buf, fayl: `${t("ms.x.fayl", { d: new Date().toISOString().slice(0, 10) })}.xlsx` };
+}
+
+/** Ikki davrni taqqoslash (Analitika kartasidagi bilan bir xil hisob): ko‘rsatkichlar va muammolar ulushi. */
+export async function davrlarExcel(til: Til, d: DavrTaqqos, filtrMatni: string | null): Promise<{ buf: Buffer; fayl: string }> {
+  const tr = tarjimon(til);
+  const { t, atama } = tr;
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "MediaPrag-Analytics";
+  wb.created = new Date();
+  const ws = wb.addWorksheet(t("dv.x.varaq"));
+  const mezonNomi = Object.fromEntries(
+    all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
+  );
+  const kNomi = (k: string) => (k === "lpsi" ? "LPSI" : `${k.toUpperCase()}. ${mezonNomi[k.toUpperCase()]}`);
+  const sarlavha = (ustunlar: string[]) => {
+    const r = ws.addRow(ustunlar);
+    r.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    r.fill = { type: "pattern", pattern: "solid", fgColor: { argb: SARLAVHA_RANGI } };
+    r.alignment = { wrapText: true, vertical: "middle" };
+  };
+  const xulosa = (ahamiyatli: boolean, yuqori?: string) =>
+    ahamiyatli ? t("ah.ahamiyatli") + (yuqori ? ` (${t("ah.yuqori", { g: yuqori })})` : "") : t("ah.ahamiyatsiz");
+
+  ws.addRow([t("dv.sarlavha")]).font = { bold: true, size: 13 };
+  ws.addRow([t("dv.x.davr", { g: "A", v: davrNomi(d.a.oraliq, tr.davr), n: d.a.n })]);
+  ws.addRow([t("dv.x.davr", { g: "B", v: davrNomi(d.b.oraliq, tr.davr), n: d.b.n })]);
+  if (filtrMatni) ws.addRow([t("dv.x.filtr", { v: filtrMatni })]);
+  if (d.sanasiz) ws.addRow([t("dv.sanasiz", { n: d.sanasiz })]);
+  if (d.kesishadi) ws.addRow([t("dv.kesishadi")]).font = { bold: true, color: { argb: "FFA4161A" } };
+  else if (d.a.n < 2 || d.b.n < 2) ws.addRow([t("dv.kam")]).font = { bold: true, color: { argb: "FFA4161A" } };
+
+  ws.addRow([]);
+  ws.addRow([t("dv.korsatkichlar")]).font = { bold: true, size: 12 };
+  sarlavha([
+    t("ah.korsatkich"), "A: n", "A: M", "A: Me", "B: n", "B: M", "B: Me", t("dv.farq"),
+    "U", "z", "p", t("ah.aniqUstun"), "r", t("ah.effekt"), t("ah.xulosa"),
+  ]);
+  for (const k of DAVR_KORSATKICHLARI) {
+    const q = d.qatorlar.find((x) => x.korsatkich === k)!;
+    const x = q.test;
+    ws.addRow([
+      kNomi(k), q.a.n, q.a.ortacha, q.a.mediana, q.b.n, q.b.ortacha, q.b.mediana, q.farq,
+      x?.U ?? null, x?.z ?? null, x?.p ?? null, x ? t(x.aniq ? "ah.ha" : "ah.yoq") : null, x?.r ?? null,
+      q.effekt ? t(`ah.e.${q.effekt}`) : null,
+      x ? xulosa(x.p < 0.05, x.r > 0 ? "B" : "A") : null,
+    ]);
+  }
+
+  ws.addRow([]);
+  ws.addRow([t("dv.muammolar")]).font = { bold: true, size: 12 };
+  sarlavha([t("u.kategoriya"), "A: k", "A: n", "A: %", "B: k", "B: n", "B: %", t("dv.farqPp"), "p", t("ah.pHolm"), t("ah.xulosa")]);
+  const testlar = !d.kesishadi && d.a.n >= 2 && d.b.n >= 2;
+  for (const q of d.muammolar) {
+    ws.addRow([
+      atama.kategoriya(q.kod, q.nomi), q.a.bor, q.a.n, q.a.ulush, q.b.bor, q.b.n, q.b.ulush, q.farq,
+      testlar ? q.p : null, testlar ? q.pHolm : null,
+      testlar ? xulosa(q.pHolm < 0.05, q.b.ulush > q.a.ulush ? "B" : "A") : null,
+    ]);
+  }
+  ws.addRow([]);
+  ws.addRow([t("dv.izohUsul")]).font = { italic: true };
+  [34, 9, 10, 10, 9, 10, 10, 16, 10, 10, 10, 12, 10, 14, 30].forEach((w, i) => {
+    ws.getColumn(i + 1).width = w;
+  });
+
+  const buf = Buffer.from(await wb.xlsx.writeBuffer());
+  return { buf, fayl: `${t("dv.x.fayl", { d: new Date().toISOString().slice(0, 10) })}.xlsx` };
 }

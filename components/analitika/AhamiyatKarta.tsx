@@ -10,7 +10,7 @@ import { fadeUp } from "@/components/ui/motion";
 import type { Ahamiyat, KopGuruhBolimi, Korsatkich } from "@/lib/ahamiyat";
 import type { Mezon } from "@/lib/types";
 
-type Bolim = "media" | "nashr" | "janr" | "muammo";
+type Bolim = "media" | "nashr" | "janr" | "yil" | "muammo";
 
 /** p < 0,001 → ***, < 0,01 → **, < 0,05 → * */
 const yulduz = (p: number) => (p < 0.001 ? "***" : p < 0.01 ? "**" : p < 0.05 ? "*" : "");
@@ -49,7 +49,7 @@ export function AhamiyatKarta({ a, mezonlar }: { a: Ahamiyat; mezonlar: Mezon[] 
             value={bolim}
             onChange={setBolim}
             layoutId="ahamiyat-tab"
-            items={(["media", "nashr", "janr", "muammo"] as Bolim[]).map((kalit) => ({ kalit, nomi: t(`ah.t.${kalit}`) }))}
+            items={(["media", "nashr", "janr", "yil", "muammo"] as Bolim[]).map((kalit) => ({ kalit, nomi: t(`ah.t.${kalit}`) }))}
           />
         }
       />
@@ -57,12 +57,13 @@ export function AhamiyatKarta({ a, mezonlar }: { a: Ahamiyat; mezonlar: Mezon[] 
       <motion.div key={bolim} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
         {bolim === "media" && <MediaBolimi a={a} pMatn={pMatn} korsatkichNomi={korsatkichNomi} />}
         {bolim === "muammo" && <MuammoBolimi a={a} pMatn={pMatn} />}
-        {(bolim === "nashr" || bolim === "janr") && (
+        {(bolim === "nashr" || bolim === "janr" || bolim === "yil") && (
           <KopGuruh
             b={a[bolim]}
             minGuruh={a.minGuruh}
             alfa={a.alfa}
             filtrMatni={t(bolim === "nashr" ? "ah.filtrNashr" : "ah.filtrJanr")}
+            qoshimchaIzoh={bolim === "yil" ? t("ah.izohYil") : undefined}
             guruhNomi={(nomi) => (bolim === "janr" ? atama.janr(nomi) : nomi)}
             pMatn={pMatn}
             korsatkichNomi={korsatkichNomi}
@@ -206,11 +207,13 @@ function KopGuruh({
   minGuruh,
   alfa,
   filtrMatni,
+  qoshimchaIzoh,
   guruhNomi,
   pMatn,
   korsatkichNomi,
 }: {
   b: KopGuruhBolimi;
+  qoshimchaIzoh?: string;
   minGuruh: number;
   alfa: number;
   filtrMatni: string;
@@ -223,6 +226,7 @@ function KopGuruh({
   const royxat = (gs: { nomi: string; n: number }[]) => gs.map((g) => `${guruhNomi(g.nomi)} (${g.n})`).join(", ");
   const sharh = (
     <div className="hint mb-3 flex flex-col gap-1">
+      {qoshimchaIzoh && <span>{qoshimchaIzoh}</span>}
       {b.guruhlar.length > 0 && <span>{t("ah.taqqoslangan", { v: royxat(b.guruhlar) })}</span>}
       {b.chiqarilgan.length > 0 && <span>{t("ah.chiqarilgan", { m: minGuruh, v: royxat(b.chiqarilgan) })}</span>}
     </div>

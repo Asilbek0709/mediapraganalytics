@@ -7,6 +7,9 @@ export const ahamiyatMatnlari = lugat(
     "ah.t.media": "Bosma va raqamli",
     "ah.t.nashr": "Nashrlar",
     "ah.t.janr": "Janrlar",
+    "ah.t.yil": "Yillar",
+    "ah.izohYil":
+      "Faqat sanasi ko‘rsatilgan materiallar; yillar alohida guruhlar sifatida taqqoslanadi. Ikki aniq davrni solishtirish — «Davrlarni taqqoslash» kartasida.",
     "ah.t.muammo": "Muammolar",
     "ah.korsatkich": "Ko‘rsatkich",
     "ah.meN": "{g}: Me (n)",
@@ -51,6 +54,9 @@ export const ahamiyatMatnlari = lugat(
     "ah.t.media": "Печатные и цифровые",
     "ah.t.nashr": "Издания",
     "ah.t.janr": "Жанры",
+    "ah.t.yil": "Годы",
+    "ah.izohYil":
+      "Только материалы с датой; годы сравниваются как отдельные группы. Два конкретных периода сравниваются в карточке «Сравнение периодов».",
     "ah.t.muammo": "Проблемы",
     "ah.korsatkich": "Показатель",
     "ah.meN": "{g}: Me (n)",
@@ -95,6 +101,9 @@ export const ahamiyatMatnlari = lugat(
     "ah.t.media": "Print vs digital",
     "ah.t.nashr": "Outlets",
     "ah.t.janr": "Genres",
+    "ah.t.yil": "Years",
+    "ah.izohYil":
+      "Only materials with a date; years are compared as separate groups. To compare two specific periods, use the “Period comparison” card.",
     "ah.t.muammo": "Problems",
     "ah.korsatkich": "Indicator",
     "ah.meN": "{g}: Mdn (n)",
