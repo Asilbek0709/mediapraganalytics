@@ -3,4 +3,4 @@ import { dashboard } from "@/lib/analytics";
 
 export const dynamic = "force-dynamic";
 
-export const GET = () => handle(() => dashboard());
+export const GET = () => handle(() => dashboard(), 200, ["admin", "kuzatuvchi"]);

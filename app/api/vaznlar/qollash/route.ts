@@ -4,5 +4,5 @@ import { handle } from "@/lib/route";
 
 export const POST = async () => {
   const til = await joriyTil();
-  return handle(() => vaznlarniQollash(til));
+  return handle(() => vaznlarniQollash(til), 200, ["admin"]);
 };

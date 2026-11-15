@@ -1,20 +1,20 @@
 /** Excel hisobot: dissertatsiyaning II–III boblari uchun tayyor jadvallar (foydalanuvchi tilida). */
 import ExcelJS from "exceljs";
 
-import type { Ahamiyat, KopGuruhBolimi, Korsatkich } from "./ahamiyat";
-import { analitika, type Granulyatsiya } from "./analitika";
-import { JANR_YOQ, kesim, materialQatorlari, muammolarChastotasi } from "./analytics";
-import { all, hozir } from "./db";
-import { vaznTahlili } from "./ekspert";
-import { tarjimon, type Tarjimon } from "./i18n";
-import type { Til } from "./i18n/til";
-import { umumiyKelishuv } from "./kelishuv";
-import { guruhNomi, korsatkichNomi } from "./kelishuvNomlari";
-import { davrNomi, KORSATKICHLAR as DAVR_KORSATKICHLARI, type AnalitikaMateriali, type DavrTaqqos } from "./davrlar";
-import type { Misol } from "./misollar";
-import { materialReytingi, MIN_REYTING, nashrReytingi } from "./reyting";
-import { metodikaniYuklash } from "./scoring";
-import type { Kesim, Metodika } from "./types";
+import type { Ahamiyat, KopGuruhBolimi, Korsatkich } from "./ahamiyat.ts";
+import { analitika, type Granulyatsiya } from "./analitika.ts";
+import { JANR_YOQ, kesim, materialQatorlari, muammolarChastotasi } from "./analytics.ts";
+import { all, hozir } from "./db.ts";
+import { vaznTahlili } from "./ekspert.ts";
+import { tarjimon, type Tarjimon } from "./i18n/index.ts";
+import type { Til } from "./i18n/til.ts";
+import { umumiyKelishuv } from "./kelishuv.ts";
+import { guruhNomi, korsatkichNomi } from "./kelishuvNomlari.ts";
+import { davrNomi, KORSATKICHLAR as DAVR_KORSATKICHLARI, type AnalitikaMateriali, type DavrTaqqos } from "./davrlar.ts";
+import type { Misol } from "./misollar.ts";
+import { materialReytingi, MIN_REYTING, nashrReytingi } from "./reyting.ts";
+import { metodikaniYuklash } from "./scoring.ts";
+import type { Kesim, Metodika } from "./types.ts";
 
 const SARLAVHA_RANGI = "FF1B3A5C";
 
@@ -30,11 +30,11 @@ function bezash(ws: ExcelJS.Worksheet, kengliklar: number[]) {
   });
 }
 
-function kesimUstunlari(m: Metodika, birinchi: string, tr: Tarjimon) {
+async function kesimUstunlari(m: Metodika, birinchi: string, tr: Tarjimon) {
   const { t, atama } = tr;
   const muammolar = Object.values(m.kategoriyalar).filter((k) => k.guruh === "muammo");
   const mezonNomi = Object.fromEntries(
-    all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
+    (await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar")).map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
   );
   const head = [
     birinchi,
@@ -100,10 +100,10 @@ function reytingVaragi(ws: ExcelJS.Worksheet, nashrlar: Kesim[], materiallar: An
   ws.addRow([t("ry.x.kamIzoh", { m: MIN_REYTING })]).font = { italic: true };
 }
 
-function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon) {
+async function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon) {
   const { t, atama, son } = tr;
   const mezonNomi = Object.fromEntries(
-    all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
+    (await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar")).map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
   );
   const kNomi = (k: Korsatkich) => (k === "lpsi" ? "LPSI" : `${k.toUpperCase()}. ${mezonNomi[k.toUpperCase()]}`);
   const xulosa = (ahamiyatli: boolean, yuqori?: string) =>
@@ -193,15 +193,15 @@ function ahamiyatVaragi(ws: ExcelJS.Worksheet, ah: Ahamiyat, tr: Tarjimon) {
 export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: string }> {
   const tr = tarjimon(til);
   const { t, atama, media, son } = tr;
-  const m = metodikaniYuklash();
-  const qatorlar = materialQatorlari();
+  const m = await metodikaniYuklash();
+  const qatorlar = await materialQatorlari();
   const wb = new ExcelJS.Workbook();
   wb.creator = "MediaPrag-Analytics";
   wb.created = new Date();
   const janr = (j: string | null) => (j == null || j === JANR_YOQ ? t("u.janrYoq") : atama.janr(j));
 
   // 1. Materiallar
-  const materiallar = all<{
+  const materiallar = await all<{
     id: number; nashr: string; media_turi: string; sana: string | null; janr: string | null;
     mavzu: string | null; havola: string | null; sarlavha: string; lid: string | null;
     lpsi: number | null; tahlil_bor: number;
@@ -233,7 +233,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   bezash(ws1, [10, 20, 13, 12, 14, 18, 30, 50, 50, 18]);
 
   // 2. Tahlil natijalari
-  const tahlillar = all<{
+  const tahlillar = await all<{
     id: number; nashr: string; media_turi: string; janr: string | null; sarlavha_turlari: string;
     sar_lid: string | null; lid_matn: string | null; sar_matn: string | null; kompozitsiya: string | null;
     auditoriya: number | null; izoh: string | null; k1: number | null; k2: number | null; k3: number | null;
@@ -282,7 +282,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   ];
   for (const [nomi, birinchi, rows, nom] of kesimlar) {
     const ws = wb.addWorksheet(nomi);
-    const { head, qator, kengliklar } = kesimUstunlari(m, birinchi, tr);
+    const { head, qator, kengliklar } = await kesimUstunlari(m, birinchi, tr);
     ws.addRow(head);
     if (rows.length) for (const r of rows) ws.addRow(qator(r, nom(r)));
     else ws.addRow([t("xl.hozirchaYoq")]);
@@ -290,7 +290,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   }
 
   // Reyting: nashrlar o‘rni (LPSI va K1–K5), eng yuqori va eng past materiallar
-  const a = analitika();
+  const a = await analitika();
   reytingVaragi(wb.addWorksheet(t("xl.v.reyting")), a.kesimlar.nashr, a.materiallar, tr);
 
   // 6. Muammolar chastotasi
@@ -299,7 +299,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
     t("u.kategoriya"), t("u.guruh"), t("u.mezon"), t("xl.jamiBirliklar"), t("xl.sarlavhada"), t("xl.lidda"),
     t("xl.matnda"), t("xl.materiallarSoni"), t("u.foizMateriallar"),
   ]);
-  for (const q of muammolarChastotasi(qatorlar, m)) {
+  for (const q of await muammolarChastotasi(qatorlar, m)) {
     ws6.addRow([
       atama.kategoriya(q.kod, q.nomi),
       q.guruh === "muammo" ? t("u.muammo") : t("u.vosita"),
@@ -338,10 +338,10 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   bezash(wsD, [12, 16, 16, 18, 10, 10, 10, 10, 10, 10]);
 
   // 9. Statistik ahamiyat (butun tanlanma bo‘yicha)
-  ahamiyatVaragi(wb.addWorksheet(t("xl.v.ahamiyat")), a.ahamiyat, tr);
+  await ahamiyatVaragi(wb.addWorksheet(t("xl.v.ahamiyat")), a.ahamiyat, tr);
 
   // 10–11. Ekspertlar: kodlash kelishuvi va vaznlar so‘rovi
-  const kel = umumiyKelishuv(true);
+  const kel = await umumiyKelishuv(true);
   const wsK = wb.addWorksheet(t("xl.v.kelishuv"));
   wsK.addRow([
     t("xl.korsatkich"), t("u.guruh"), t("xl.olchov"), "Krippendorff α", t("xl.talqin"),
@@ -365,7 +365,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
   wsK.addRow([t("xl.alphaTalqin")]);
   bezash(wsK, [32, 26, 16, 16, 14, 16, 14, 14, 20]);
 
-  const vz = vaznTahlili();
+  const vz = await vaznTahlili();
   const wsV = wb.addWorksheet(t("xl.v.vaznlar"));
   wsV.addRow([t("xl.ekspert"), "K1", "K2", "K3", "K4", "K5", t("u.izoh")]);
   for (const v of vz.vaznlar) wsV.addRow([v.ism, v.vaznlar.K1, v.vaznlar.K2, v.vaznlar.K3, v.vaznlar.K4, v.vaznlar.K5, v.izoh]);
@@ -408,7 +408,7 @@ export async function excelHisobot(til: Til): Promise<{ buf: Buffer; fayl: strin
 
   sarlavhaQator(t("xl.m.mezonlar"));
   jadvalSarlavha([t("xl.m.kod"), t("u.mezon"), t("xl.m.vazn"), t("xl.m.hisoblash")]);
-  for (const r of all<{ kod: string; nomi: string; vazn: number; tavsif: string }>("SELECT * FROM mezonlar ORDER BY kod")) {
+  for (const r of await all<{ kod: string; nomi: string; vazn: number; tavsif: string }>("SELECT * FROM mezonlar ORDER BY kod")) {
     wsM.addRow([r.kod, atama.mezon(r.kod, r.nomi), r.vazn, atama.mezonTavsif(r.kod, r.tavsif)]);
   }
 
@@ -503,7 +503,7 @@ export async function davrlarExcel(til: Til, d: DavrTaqqos, filtrMatni: string |
   wb.created = new Date();
   const ws = wb.addWorksheet(t("dv.x.varaq"));
   const mezonNomi = Object.fromEntries(
-    all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
+    (await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar")).map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
   );
   const kNomi = (k: string) => (k === "lpsi" ? "LPSI" : `${k.toUpperCase()}. ${mezonNomi[k.toUpperCase()]}`);
   const sarlavha = (ustunlar: string[]) => {

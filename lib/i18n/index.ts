@@ -2,34 +2,36 @@
  * Tarjima: matn kalitlari, parametrlar, ko‘plik shakllari, son formati, atamalar.
  * Server va mijozda bir xil ishlaydi (next/headers bu yerda ishlatilmaydi).
  */
-import type { MezonIzohi, Qism } from "../types";
-import { atamalar, type Atamalar } from "./atamalar";
-import { ahamiyatMatnlari } from "./matnlar/ahamiyat";
-import { analitikaMatnlari } from "./matnlar/analitika";
-import { dashboardMatnlari } from "./matnlar/dashboard";
-import { davrMatnlari } from "./matnlar/davr";
-import { ekspertMatnlari } from "./matnlar/ekspert";
-import { excelMatnlari } from "./matnlar/excel";
-import { hisobotMatnlari } from "./matnlar/hisobot";
-import { importMatnlari } from "./matnlar/import";
-import { izoh } from "./matnlar/izoh";
-import { mediabazaMatnlari } from "./matnlar/mediabaza";
-import { metodikaMatnlari } from "./matnlar/metodika";
-import { misollarMatnlari } from "./matnlar/misollar";
-import { nashrHisobotMatnlari } from "./matnlar/nashrHisobot";
-import { nav } from "./matnlar/nav";
-import { rasmMatnlari } from "./matnlar/rasm";
-import { tahlilMatnlari } from "./matnlar/tahlil";
-import { umumiy } from "./matnlar/umumiy";
-import { vaqt } from "./matnlar/vaqt";
-import { xato } from "./matnlar/xato";
-import { zaxiraMatnlari } from "./matnlar/zaxira";
-import type { Til } from "./til";
+import type { MezonIzohi, Qism } from "../types.ts";
+import { atamalar, type Atamalar } from "./atamalar.ts";
+import { ahamiyatMatnlari } from "./matnlar/ahamiyat.ts";
+import { analitikaMatnlari } from "./matnlar/analitika.ts";
+import { authMatnlari } from "./matnlar/auth.ts";
+import { buyruqMatnlari } from "./matnlar/buyruq.ts";
+import { dashboardMatnlari } from "./matnlar/dashboard.ts";
+import { davrMatnlari } from "./matnlar/davr.ts";
+import { ekspertMatnlari } from "./matnlar/ekspert.ts";
+import { excelMatnlari } from "./matnlar/excel.ts";
+import { hisobotMatnlari } from "./matnlar/hisobot.ts";
+import { importMatnlari } from "./matnlar/import.ts";
+import { izoh } from "./matnlar/izoh.ts";
+import { mediabazaMatnlari } from "./matnlar/mediabaza.ts";
+import { metodikaMatnlari } from "./matnlar/metodika.ts";
+import { misollarMatnlari } from "./matnlar/misollar.ts";
+import { nashrHisobotMatnlari } from "./matnlar/nashrHisobot.ts";
+import { nav } from "./matnlar/nav.ts";
+import { rasmMatnlari } from "./matnlar/rasm.ts";
+import { tahlilMatnlari } from "./matnlar/tahlil.ts";
+import { umumiy } from "./matnlar/umumiy.ts";
+import { vaqt } from "./matnlar/vaqt.ts";
+import { xato } from "./matnlar/xato.ts";
+import { zaxiraMatnlari } from "./matnlar/zaxira.ts";
+import type { Til } from "./til.ts";
 
 const BOLIMLAR = [
   umumiy, nav, xato, izoh, vaqt, dashboardMatnlari, mediabazaMatnlari, importMatnlari, tahlilMatnlari,
   analitikaMatnlari, ahamiyatMatnlari, metodikaMatnlari, ekspertMatnlari, hisobotMatnlari, excelMatnlari, rasmMatnlari,
-  misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari,
+  misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari, authMatnlari, buyruqMatnlari,
 ] as const;
 
 type Bolim = (typeof BOLIMLAR)[number];

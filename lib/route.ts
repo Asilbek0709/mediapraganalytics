@@ -1,9 +1,11 @@
 /** Route handler’lar uchun umumiy yordamchi: xatoliklarni foydalanuvchi tilidagi JSON javobga aylantiradi. */
 import { NextResponse } from "next/server";
 
-import { tarjimon } from "./i18n";
-import { joriyTil } from "./i18n/server";
-import { ApiError } from "./queries";
+import { tarjimon } from "./i18n/index.ts";
+import { joriyTil } from "./i18n/server.ts";
+import { ApiError } from "./queries.ts";
+import type { Rol } from "./ruxsat.ts";
+import { apiTalab } from "./sessiya.ts";
 
 export async function xatoJavobi(e: unknown, zaxira: "x.server" | "x.faylOqishXato" | "x.pdfXato" = "x.server") {
   const { t, x } = tarjimon(await joriyTil());
@@ -14,8 +16,13 @@ export async function xatoJavobi(e: unknown, zaxira: "x.server" | "x.faylOqishXa
   return NextResponse.json({ detail: t(zaxira) }, { status: 500 });
 }
 
-export async function handle<T>(fn: () => T | Promise<T>, status = 200) {
+/**
+ * Route handler: natija JSON’da, xato — foydalanuvchi tilida.
+ * rollar — bu amalga ruxsat berilgan rollar (proxy’dagi tekshiruvdan tashqari, ichki ikkinchi tekshiruv).
+ */
+export async function handle<T>(fn: () => T | Promise<T>, status = 200, rollar?: Rol[]) {
   try {
+    if (rollar) await apiTalab(rollar);
     return NextResponse.json(await fn(), { status });
   } catch (e) {
     return xatoJavobi(e);

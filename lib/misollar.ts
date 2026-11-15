@@ -5,7 +5,7 @@
  * Bu modul toza — bazaga murojaat qilmaydi, shuning uchun mijozda ham, serverda ham ishlaydi
  * (bazadan yig‘ish: lib/misollarBaza.ts).
  */
-import type { Guruh, MediaTuri, Qism } from "./types";
+import type { Guruh, MediaTuri, Qism } from "./types.ts";
 
 export interface Kontekst {
   /** Fragmentdan oldingi qism (gap boshidan) */

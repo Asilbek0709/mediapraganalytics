@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** LPSI hisobidagi yetishmayotgan maydonlar va munosabat nomlari. */
 export const izoh = lugat(

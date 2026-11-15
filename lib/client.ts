@@ -1,8 +1,8 @@
 "use client";
 
 /** Mijoz tomonidagi API chaqiruvlari. Server xatolari allaqachon foydalanuvchi tilida keladi. */
-import { tarjimon } from "./i18n";
-import { tilniOlish } from "./i18n/til";
+import { tarjimon } from "./i18n/index.ts";
+import { tilniOlish } from "./i18n/til.ts";
 
 const tr = () => tarjimon(tilniOlish(typeof document === "undefined" ? null : document.documentElement.lang));
 

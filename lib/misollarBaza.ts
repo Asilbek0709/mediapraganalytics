@@ -4,11 +4,11 @@
  * Tanlov belgi id’siga emas, (material, kategoriya, qism, fragment) to‘plamiga bog‘lanadi:
  * tahlil qayta saqlanganda belgilar qayta yoziladi, lekin fragment o‘zgarmasa tanlov saqlanib qoladi.
  */
-import { all, hozir, one, run } from "./db";
-import { JANR_YOQ } from "./format";
-import { kontekstAjratish, ustmaUst, type Misol } from "./misollar";
-import { ApiError } from "./queries";
-import type { Guruh, Kategoriya, MediaTuri, Qism } from "./types";
+import { all, hozir, one, run } from "./db.ts";
+import { JANR_YOQ } from "./format.ts";
+import { kontekstAjratish, ustmaUst, type Misol } from "./misollar.ts";
+import { ApiError } from "./queries.ts";
+import type { Guruh, Kategoriya, MediaTuri, Qism } from "./types.ts";
 
 export interface Korpus {
   misollar: Misol[];
@@ -44,8 +44,8 @@ interface BelgiQatori {
 const kalit = (material: number, kategoriya: string, qism: string, fragment: string) =>
   JSON.stringify([material, kategoriya, qism, fragment]);
 
-export function misollarKorpusi(): Korpus {
-  const belgilar = all<BelgiQatori>(
+export async function misollarKorpusi(): Promise<Korpus> {
+  const belgilar = await all<BelgiQatori>(
     `SELECT b.id, b.material_id, b.kategoriya, b.qism, b.fragment, b.izoh,
             k.nomi AS kategoriya_nomi, k.guruh, k.tartib,
             m.nashr_id, n.nomi AS nashr, n.turi, m.sana, m.janr, m.sarlavha, m.lid, m.matn, m.havola,
@@ -59,16 +59,16 @@ export function misollarKorpusi(): Korpus {
      ORDER BY b.id`,
   );
   const fragmentsiz =
-    one<{ n: number }>("SELECT COUNT(*) AS n FROM belgilar WHERE fragment IS NULL OR TRIM(fragment) = ''")?.n ?? 0;
+    (await one<{ n: number }>("SELECT COUNT(*) AS n FROM belgilar WHERE fragment IS NULL OR TRIM(fragment) = ''"))?.n ?? 0;
 
   // Ekspertlar: material bo‘yicha nechta mustaqil tahlil va ularning belgilari
   const ekspertSoni = new Map(
-    all<{ material_id: number; n: number }>(
+    (await all<{ material_id: number; n: number }>(
       "SELECT material_id, COUNT(*) AS n FROM ekspert_tahlillari GROUP BY material_id",
-    ).map((r) => [r.material_id, r.n]),
+    )).map((r) => [r.material_id, r.n]),
   );
   const ekspertBelgilari = new Map<string, { ekspert_id: number; fragment: string | null }[]>();
-  for (const r of all<{ material_id: number; ekspert_id: number; kategoriya: string; qism: string; fragment: string | null }>(
+  for (const r of await all<{ material_id: number; ekspert_id: number; kategoriya: string; qism: string; fragment: string | null }>(
     `SELECT et.material_id, et.ekspert_id, eb.kategoriya, eb.qism, eb.fragment
      FROM ekspert_belgilari eb JOIN ekspert_tahlillari et ON et.id = eb.ekspert_tahlil_id`,
   )) {
@@ -77,9 +77,9 @@ export function misollarKorpusi(): Korpus {
   }
 
   const tanlanganlar = new Set(
-    all<{ material_id: number; kategoriya: string; qism: string; fragment: string }>(
+    (await all<{ material_id: number; kategoriya: string; qism: string; fragment: string }>(
       "SELECT material_id, kategoriya, qism, fragment FROM tanlangan_misollar",
-    ).map((r) => kalit(r.material_id, r.kategoriya, r.qism, r.fragment)),
+    )).map((r) => kalit(r.material_id, r.kategoriya, r.qism, r.fragment)),
   );
 
   const misollar: Misol[] = belgilar.map((b) => {
@@ -118,14 +118,14 @@ export function misollarKorpusi(): Korpus {
   return {
     misollar,
     fragmentsiz,
-    kategoriyalar: all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib"),
-    nashrlar: all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar ORDER BY turi, nomi"),
+    kategoriyalar: await all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib"),
+    nashrlar: await all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar ORDER BY turi, nomi"),
     janrlar: [...new Set(misollar.map((m) => m.janr))].sort(),
   };
 }
 
 /** ★ belgisini qo‘yish yoki olib tashlash. Faqat mavjud belgi uchun. */
-export function misolniTanlash(data: unknown) {
+export async function misolniTanlash(data: unknown) {
   const d = (data ?? {}) as Record<string, unknown>;
   const material = Number(d.material_id);
   const kategoriya = typeof d.kategoriya === "string" ? d.kategoriya : "";
@@ -136,20 +136,20 @@ export function misolniTanlash(data: unknown) {
     throw new ApiError(422, "x.misolTopilmadi");
   }
   // Belgilar TRIM qilingan holda saqlanadi, lekin eski yozuvlar uchun ham TRIM bilan solishtiriladi
-  const belgi = one<{ fragment: string }>(
+  const belgi = await one<{ fragment: string }>(
     "SELECT fragment FROM belgilar WHERE material_id = ? AND kategoriya = ? AND qism = ? AND TRIM(fragment) = ? LIMIT 1",
     [material, kategoriya, qism, fragment.trim()],
   );
   if (!belgi) throw new ApiError(404, "x.misolTopilmadi");
 
   if (tanlangan) {
-    run(
+    await run(
       `INSERT INTO tanlangan_misollar (material_id, kategoriya, qism, fragment, yaratilgan) VALUES (?, ?, ?, ?, ?)
        ON CONFLICT DO NOTHING`,
       [material, kategoriya, qism, belgi.fragment, hozir()],
     );
   } else {
-    run("DELETE FROM tanlangan_misollar WHERE material_id = ? AND kategoriya = ? AND qism = ? AND TRIM(fragment) = ?", [
+    await run("DELETE FROM tanlangan_misollar WHERE material_id = ? AND kategoriya = ? AND qism = ? AND TRIM(fragment) = ?", [
       material,
       kategoriya,
       qism,

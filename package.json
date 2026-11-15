@@ -6,14 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/*.test.mts\""
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/*.test.mts\"",
+    "import:sqlite": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/sqlite-import.mts"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@fontsource-variable/jetbrains-mono": "5.2.8",
+    "@fontsource-variable/manrope": "5.3.0",
     "dejavu-fonts-ttf": "^2.37.3",
     "exceljs": "^4.4.0",
     "framer-motion": "^13.4.4",
+    "lucide-react": "1.64.0",
     "next": "16.3.6",
     "pdfkit": "^0.20.2",
+    "postgres": "^4.1.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
@@ -25,5 +31,8 @@
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

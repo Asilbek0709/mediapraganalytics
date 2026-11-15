@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 export const nav = lugat(
   {
@@ -9,6 +9,8 @@ export const nav = lugat(
     "nav.metodika": "Metodika",
     "nav.ekspertlar": "Ekspertlar",
     "nav.hisobot": "Hisobot",
+    "nav.vazifalar": "Vazifalarim",
+    "nav.foydalanuvchilar": "Foydalanuvchilar",
     "nav.import": "Import",
     "nav.tahlil": "Tahlil",
     "nav.kelishuv": "Kelishuv",
@@ -18,6 +20,10 @@ export const nav = lugat(
     "nav.yorug": "Yorug‘",
     "nav.tizim": "Tizimdagidek",
     "nav.qorongi": "Qorong‘i",
+    "nav.qidirish": "Qidirish",
+    "nav.menyu": "Menyu",
+    "nav.menyuYigish": "Menyuni yig‘ish",
+    "nav.menyuYoyish": "Menyuni yoyish",
   },
   {
     "nav.bosh": "Панель",
@@ -27,6 +33,8 @@ export const nav = lugat(
     "nav.metodika": "Методика",
     "nav.ekspertlar": "Эксперты",
     "nav.hisobot": "Отчёт",
+    "nav.vazifalar": "Мои задания",
+    "nav.foydalanuvchilar": "Пользователи",
     "nav.import": "Импорт",
     "nav.tahlil": "Анализ",
     "nav.kelishuv": "Согласованность",
@@ -36,6 +44,10 @@ export const nav = lugat(
     "nav.yorug": "Светлая",
     "nav.tizim": "Как в системе",
     "nav.qorongi": "Тёмная",
+    "nav.qidirish": "Поиск",
+    "nav.menyu": "Меню",
+    "nav.menyuYigish": "Свернуть меню",
+    "nav.menyuYoyish": "Развернуть меню",
   },
   {
     "nav.bosh": "Dashboard",
@@ -45,6 +57,8 @@ export const nav = lugat(
     "nav.metodika": "Methodology",
     "nav.ekspertlar": "Experts",
     "nav.hisobot": "Report",
+    "nav.vazifalar": "My tasks",
+    "nav.foydalanuvchilar": "Users",
     "nav.import": "Import",
     "nav.tahlil": "Analysis",
     "nav.kelishuv": "Agreement",
@@ -54,5 +68,9 @@ export const nav = lugat(
     "nav.yorug": "Light",
     "nav.tizim": "System",
     "nav.qorongi": "Dark",
+    "nav.qidirish": "Search",
+    "nav.menyu": "Menu",
+    "nav.menyuYigish": "Collapse menu",
+    "nav.menyuYoyish": "Expand menu",
   },
 );

@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/Toast";
 import { fadeUp, pressable, spring, stagger } from "@/components/ui/motion";
 import { api, xatoMatni } from "@/lib/client";
 import { hozirgiVaqt, idRaqami, sana, sanaVaqt } from "@/lib/format";
+import type { Kalit } from "@/lib/i18n";
 import type { Belgi, Kategoriya, Material, MetodikaTolik, Natija, Qism, Tahlil } from "@/lib/types";
 
 const QISM_TARTIB: Record<Qism, number> = { sarlavha: 0, lid: 1, matn: 2 };
@@ -56,7 +57,7 @@ function Blok({
       <div className="mb-3.5 flex items-center gap-3">
         <motion.span
           className="grid h-7 w-7 flex-none place-items-center rounded-lg text-[12.5px] font-extrabold"
-          style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
+          style={{ background: "var(--brand-grad)", color: "var(--brand-ink)" }}
           whileHover={{ rotate: -10, scale: 1.1 }}
           transition={{ type: "spring", stiffness: 400, damping: 14 }}
         >
@@ -148,6 +149,7 @@ export function TahlilView({
   met,
   baholovchi = { tur: "asosiy" },
   baholovchilar,
+  qaytish = { href: "/mediabaza", kalit: "nav.mediabaza" },
 }: {
   material: Material;
   tahlil: Tahlil | null;
@@ -156,6 +158,8 @@ export function TahlilView({
   met: MetodikaTolik;
   baholovchi?: Baholovchi;
   baholovchilar?: BaholovchilarRoyxati;
+  /** «orqaga» havolasi: administratorga — Mediabaza, ekspertga — Vazifalarim */
+  qaytish?: { href: string; kalit: Kalit };
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -417,8 +421,8 @@ export function TahlilView({
         className="flex flex-wrap items-end justify-between gap-4"
       >
         <div className="min-w-0">
-          <Link href="/mediabaza" className="text-[12.5px] font-semibold">
-            ← {t("nav.mediabaza")}
+          <Link href={qaytish.href} className="text-[12.5px] font-semibold">
+            ← {t(qaytish.kalit)}
           </Link>
           <h1 className="mt-1.5">
             {t("th.sarlavha")}{" "}
@@ -515,7 +519,7 @@ export function TahlilView({
         {/* ------------------------------------------------ matn paneli */}
         <Card
           koarish={false}
-          className="scroll-thin xl:sticky xl:top-[92px] xl:max-h-[calc(100dvh-120px)] xl:overflow-y-auto"
+          className="scroll-thin xl:sticky xl:top-6 xl:max-h-[calc(100dvh-48px)] xl:overflow-y-auto"
           initial={{ opacity: 0, x: -14 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -782,8 +786,8 @@ export function TahlilView({
                 : t("th.saqlanmaganHali")}
           </motion.span>
           <div className="flex flex-wrap gap-2.5">
-            <Link className="btn" href="/mediabaza">
-              {t("th.qaytish")}
+            <Link className="btn" href={qaytish.href}>
+              {qaytish.href === "/mediabaza" ? t("th.qaytish") : `← ${t(qaytish.kalit)}`}
             </Link>
             <motion.button className="btn btn-primary" onClick={saqlash} disabled={saqlanmoqda} {...pressable}>
               {t("u.saqlash")}

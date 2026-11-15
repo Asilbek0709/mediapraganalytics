@@ -1,6 +1,6 @@
 /** Kelishuv ko‘rsatkichlari va qiymatlarining foydalanuvchi tilidagi nomlari (server va mijoz uchun). */
-import type { Tarjimon } from "./i18n";
-import type { KelishuvGuruh, QiymatFormati } from "./kelishuv";
+import type { Tarjimon } from "./i18n/index.ts";
+import type { KelishuvGuruh, QiymatFormati } from "./kelishuv.ts";
 
 export function korsatkichNomi(kalit: string, tr: Tarjimon): string {
   const { t, atama } = tr;

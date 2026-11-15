@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { CircleCheckBig, Files, Gauge } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
@@ -15,6 +16,7 @@ import { ReytingKarta } from "./ReytingKarta";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { DarajaBadge } from "@/components/ui/Badge";
 import { Card, CardHead, Reveal, Stagger } from "@/components/ui/Card";
+import { Kpi } from "@/components/ui/Kpi";
 import { Tabs } from "@/components/ui/Tabs";
 import { fadeUp } from "@/components/ui/motion";
 import type { Analitika, AnalitikaFiltr, Granulyatsiya } from "@/lib/analitika";
@@ -236,31 +238,29 @@ export function AnalitikaView({ a }: { a: Analitika }) {
 
       <motion.div animate={{ opacity: pending ? 0.5 : 1 }} transition={{ duration: 0.2 }} className="flex flex-col gap-5">
         <Stagger className="grid gap-4 sm:grid-cols-3">
-          <Card className="!p-5">
-            <div className="eyebrow">{t("an.tanlovda")}</div>
-            <div className="mt-2 text-[32px] font-extrabold leading-none">
-              <AnimatedNumber value={a.jami} kasr={0} />
-            </div>
-          </Card>
-          <Card className="!p-5">
-            <div className="eyebrow">{t("d.toliqTahlil")}</div>
-            <div className="mt-2 text-[32px] font-extrabold leading-none">
-              <AnimatedNumber value={a.tahlil_qilingan} kasr={0} />
-            </div>
-          </Card>
-          <Card className="!p-5">
-            <div className="eyebrow">{t("d.ortachaLpsi")}</div>
-            <div className="mt-2 flex items-center gap-3 text-[32px] font-extrabold leading-none">
-              <AnimatedNumber value={a.ortacha_lpsi} />
-              {a.ortacha_lpsi != null && (
+          <Kpi label={t("an.tanlovda")} belgi={Files}>
+            <AnimatedNumber value={a.jami} kasr={0} />
+          </Kpi>
+          <Kpi label={t("d.toliqTahlil")} belgi={CircleCheckBig}>
+            <AnimatedNumber value={a.tahlil_qilingan} kasr={0} />
+          </Kpi>
+          <Kpi
+            label={t("d.ortachaLpsi")}
+            belgi={Gauge}
+            izoh={
+              a.ortacha_lpsi != null ? (
                 <DarajaBadge
                   daraja={(a.shkala.find((s) => (a.ortacha_lpsi ?? 0) <= s.gacha) ?? a.shkala[a.shkala.length - 1]).nomi}
                   shkala={a.shkala}
                   faqatDaraja
                 />
-              )}
-            </div>
-          </Card>
+              ) : undefined
+            }
+          >
+            <span className="text-aurora">
+              <AnimatedNumber value={a.ortacha_lpsi} />
+            </span>
+          </Kpi>
         </Stagger>
 
         {a.tahlil_qilingan === 0 ? (

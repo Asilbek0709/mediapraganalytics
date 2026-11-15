@@ -1,11 +1,11 @@
 /** «Nashr hisoboti» — bitta nashr bo‘yicha redaksion tahlil uchun PDF (foydalanuvchi tilida). */
-import { all, hozir } from "./db";
-import { darajaIndeks, idRaqami, sana } from "./format";
-import { tarjimon } from "./i18n";
-import type { Til } from "./i18n/til";
-import { CHEGARA_BALL, CHEGARA_FP, nashrHisoboti, type Xulosa } from "./nashrHisoboti";
-import { CHAP, KENGLIK, RANG, yangiHujjat, type Katak } from "./pdfAsos";
-import type { Korsatkich } from "./davrlar";
+import { all, hozir } from "./db.ts";
+import { darajaIndeks, idRaqami, sana } from "./format.ts";
+import { tarjimon } from "./i18n/index.ts";
+import type { Til } from "./i18n/til.ts";
+import { CHEGARA_BALL, CHEGARA_FP, nashrHisoboti, type Xulosa } from "./nashrHisoboti.ts";
+import { CHAP, KENGLIK, RANG, yangiHujjat, type Katak } from "./pdfAsos.ts";
+import type { Korsatkich } from "./davrlar.ts";
 
 const ALFA = 0.05;
 const yulduz = (p: number) => (p < 0.001 ? "***" : p < 0.01 ? "**" : p < 0.05 ? "*" : "");
@@ -17,9 +17,9 @@ export async function nashrHisobotiPdf(
 ): Promise<{ pdf: Buffer; fayl: string }> {
   const tr = tarjimon(til);
   const { t, son, atama, media } = tr;
-  const h = nashrHisoboti(nashrId, davr);
+  const h = await nashrHisoboti(nashrId, davr);
   const mezonNomi = Object.fromEntries(
-    all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
+    (await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar")).map((r) => [r.kod, atama.mezon(r.kod, r.nomi)]),
   );
   const kNomi = (k: Korsatkich) => (k === "lpsi" ? "LPSI" : `${k.toUpperCase()}. ${mezonNomi[k.toUpperCase()]}`);
   const ishorali = (v: number | null, kasr = 1) => (v == null ? "—" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${son(Math.abs(v), kasr)}`);

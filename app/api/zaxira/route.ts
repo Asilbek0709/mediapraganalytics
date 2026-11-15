@@ -4,7 +4,7 @@ import { zaxiraHolati, zaxiraYaratish } from "@/lib/zaxira";
 export const dynamic = "force-dynamic";
 
 /** Joriy baza va zaxira nusxalar ro‘yxati */
-export const GET = () => handle(zaxiraHolati);
+export const GET = () => handle(zaxiraHolati, 200, ["admin"]);
 
 /** Qo‘lda zaxira yaratish */
-export const POST = () => handle(zaxiraYaratish, 201);
+export const POST = () => handle(zaxiraYaratish, 201, ["admin"]);

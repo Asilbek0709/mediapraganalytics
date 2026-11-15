@@ -1,14 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Award, CircleCheckBig, Files, Gauge } from "lucide-react";
 import Link from "next/link";
 
 import { BarsH, ColumnBars, GroupedBars, Legend } from "@/components/charts/Bars";
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { RasmTugmasi } from "@/components/rasm/RasmTugmasi";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { DarajaBadge } from "@/components/ui/Badge";
 import { Card, CardHead, Reveal, Stagger } from "@/components/ui/Card";
+import { Kpi } from "@/components/ui/Kpi";
 import { fadeUp, pressable } from "@/components/ui/motion";
 import { idRaqami, sana } from "@/lib/format";
 import type { Dashboard } from "@/lib/types";
@@ -17,32 +20,9 @@ const seriyaRangi = (turi?: string) => (turi === "raqamli" ? "var(--s2)" : "var(
 /** Rasm palitrasidagi o‘rin: 0 — bosma, 1 — raqamli */
 const seriyaIndeksi = (turi?: string | null) => (turi === "raqamli" ? 1 : 0);
 
-function Kpi({
-  label,
-  value,
-  kasr = 0,
-  izoh,
-  matn,
-}: {
-  label: string;
-  value?: number | null;
-  kasr?: number;
-  izoh?: React.ReactNode;
-  matn?: string;
-}) {
-  return (
-    <Card className="!p-5">
-      <div className="eyebrow">{label}</div>
-      <div className="mt-2 text-[34px] font-extrabold leading-none" style={{ color: "var(--ink)" }}>
-        {matn ?? <AnimatedNumber value={value} kasr={kasr} />}
-      </div>
-      {izoh && <div className="mt-2.5 text-[12.5px]" style={{ color: "var(--muted)" }}>{izoh}</div>}
-    </Card>
-  );
-}
-
 export function DashboardView({ d }: { d: Dashboard }) {
   const { t, son, atama, media } = useTil();
+  const { admin } = useFoydalanuvchi();
   const eng = d.nashrlar[0];
   const muammolar = d.muammolar.filter((q) => q.guruh === "muammo").sort((a, b) => b.ulush - a.ulush);
   const kLabels = ["K1", "K2", "K3", "K4", "K5", "LPSI"];
@@ -62,11 +42,13 @@ export function DashboardView({ d }: { d: Dashboard }) {
           <p className="hint mt-2 max-w-[62ch]">{t("d.izoh", { v: d.metodika_versiya })}</p>
         </div>
         <div className="flex flex-wrap gap-2.5">
-          <motion.div {...pressable}>
-            <Link className="btn" href="/mediabaza?yangi=1">
-              {t("d.materialQoshish")}
-            </Link>
-          </motion.div>
+          {admin && (
+            <motion.div {...pressable}>
+              <Link className="btn" href="/mediabaza?yangi=1">
+                {t("d.materialQoshish")}
+              </Link>
+            </motion.div>
+          )}
           <motion.div {...pressable}>
             <a className="btn btn-primary" href="/api/export/excel">
               {t("d.excel")}
@@ -76,23 +58,31 @@ export function DashboardView({ d }: { d: Dashboard }) {
       </motion.header>
 
       <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label={t("u.materiallar")} value={d.jami} izoh={t("d.nashrlarBazada", { n: d.nashrlar_soni })} />
+        <Kpi label={t("u.materiallar")} belgi={Files} izoh={t("d.nashrlarBazada", { n: d.nashrlar_soni })}>
+          <AnimatedNumber value={d.jami} kasr={0} />
+        </Kpi>
         <Kpi
           label={t("d.toliqTahlil")}
-          value={d.tahlil_qilingan}
+          belgi={CircleCheckBig}
           izoh={t("d.toliqEmasKutmoqda", { a: d.toliq_emas, b: d.tahlil_kutmoqda })}
-        />
+        >
+          <AnimatedNumber value={d.tahlil_qilingan} kasr={0} />
+        </Kpi>
         <Kpi
           label={t("d.ortachaLpsi")}
-          value={d.ortacha_lpsi}
-          kasr={1}
+          belgi={Gauge}
+          aurora
           izoh={d.ortacha_daraja ? <DarajaBadge daraja={d.ortacha_daraja} shkala={d.shkala} faqatDaraja /> : t("d.haliHisoblanmagan")}
-        />
+        >
+          <AnimatedNumber value={d.ortacha_lpsi} kasr={1} />
+        </Kpi>
         <Kpi
           label={t("d.engYuqori")}
-          matn={eng ? eng.nomi : "—"}
+          belgi={Award}
           izoh={eng ? t("d.lpsiVaSoni", { v: son(eng.lpsi), n: eng.soni }) : t("d.yetarliEmas")}
-        />
+        >
+          <span className="truncate">{eng ? eng.nomi : "—"}</span>
+        </Kpi>
       </Stagger>
 
       {d.tahlil_qilingan === 0 ? (
@@ -100,9 +90,11 @@ export function DashboardView({ d }: { d: Dashboard }) {
           <div className="py-12 text-center">
             <p className="text-[15px] font-semibold">{d.jami ? t("d.boshTahlilYoq") : t("d.boshBazaBosh")}</p>
             <p className="hint mt-2">{d.jami ? t("d.boshTahlilYoqIzoh") : t("d.boshBazaBoshIzoh")}</p>
-            <Link className="btn btn-primary mt-5 inline-flex" href={d.jami ? "/mediabaza" : "/mediabaza?yangi=1"}>
-              {d.jami ? t("d.mediabazagaOtish") : t("d.materialQoshishOddiy")}
-            </Link>
+            {admin && (
+              <Link className="btn btn-primary mt-5 inline-flex" href={d.jami ? "/mediabaza" : "/mediabaza?yangi=1"}>
+                {d.jami ? t("d.mediabazagaOtish") : t("d.materialQoshishOddiy")}
+              </Link>
+            )}
           </div>
         </Card>
       ) : (
@@ -336,7 +328,7 @@ export function DashboardView({ d }: { d: Dashboard }) {
                         <td className="id">{idRaqami(r.id)}</td>
                         <td>{r.nashr}</td>
                         <td className="min-w-[240px]">
-                          <Link href={`/tahlil/${r.id}`}>{r.sarlavha}</Link>
+                          {admin ? <Link href={`/tahlil/${r.id}`}>{r.sarlavha}</Link> : r.sarlavha}
                         </td>
                         <td>
                           <DarajaBadge daraja={r.daraja} lpsi={r.lpsi} shkala={d.shkala} />

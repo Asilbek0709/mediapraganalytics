@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** «Misollar korpusi» sahifasi, Word ro‘yxati va Excel varag‘i matnlari. */
 export const misollarMatnlari = lugat(

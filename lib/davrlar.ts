@@ -8,7 +8,7 @@
 // «.ts» kengaytmasi bilan — Node testlari ham shu modulni to‘g‘ridan-to‘g‘ri yuklay oladi
 import { sana } from "./format.ts";
 import { fisherAniq, holm, mannWhitney, mediana, rEffekti, type EffektKuchi, type MannWhitneyNatija } from "./statistika.ts";
-import type { MediaTuri } from "./types";
+import type { MediaTuri } from "./types.ts";
 
 export const KORSATKICHLAR = ["k1", "k2", "k3", "k4", "k5", "lpsi"] as const;
 export type Korsatkich = (typeof KORSATKICHLAR)[number];

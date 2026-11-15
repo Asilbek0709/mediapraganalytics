@@ -2,8 +2,8 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
-import { tarjimon, type Kalit } from "./index";
-import { MAVZU_COOKIE, TIL_COOKIE, mavzuniOlish, tilniOlish, type Mavzu, type Til } from "./til";
+import { tarjimon, type Kalit } from "./index.ts";
+import { MAVZU_COOKIE, TIL_COOKIE, mavzuniOlish, tilniOlish, type Mavzu, type Til } from "./til.ts";
 
 export async function joriyTil(): Promise<Til> {
   return tilniOlish((await cookies()).get(TIL_COOKIE)?.value);

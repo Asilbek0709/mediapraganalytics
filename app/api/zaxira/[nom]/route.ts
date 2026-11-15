@@ -1,20 +1,20 @@
-import fs from "node:fs";
-
 import { faylSarlavhasi, handle, xatoJavobi } from "@/lib/route";
-import { zaxiraniOchirish, zaxiraYoli } from "@/lib/zaxira";
+import { zaxiraFayli, zaxiraniOchirish } from "@/lib/zaxira";
+import { apiTalab } from "@/lib/sessiya";
 
 type Ctx = { params: Promise<{ nom: string }> };
 
 export const dynamic = "force-dynamic";
 
-/** Nusxani yuklab olish */
+/** Nusxani yuklab olish (siqilgan JSON) */
 export const GET = async (_req: Request, { params }: Ctx) => {
   const { nom } = await params;
   try {
-    const fayl = fs.readFileSync(zaxiraYoli(nom));
+    await apiTalab(["admin"]);
+    const fayl = await zaxiraFayli(nom);
     return new Response(new Uint8Array(fayl), {
       headers: {
-        "Content-Type": "application/vnd.sqlite3",
+        "Content-Type": "application/gzip",
         "Content-Disposition": faylSarlavhasi("attachment", nom),
         "Content-Length": String(fayl.length),
       },
@@ -26,5 +26,5 @@ export const GET = async (_req: Request, { params }: Ctx) => {
 
 export const DELETE = async (_req: Request, { params }: Ctx) => {
   const { nom } = await params;
-  return handle(() => zaxiraniOchirish(nom));
+  return handle(() => zaxiraniOchirish(nom), 200, ["admin"]);
 };

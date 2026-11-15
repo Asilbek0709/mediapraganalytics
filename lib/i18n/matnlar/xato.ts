@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** Server qaytaradigan xato xabarlari (ApiError kalitlari). */
 export const xato = lugat(
@@ -13,7 +13,7 @@ export const xato = lugat(
     "x.materialTopilmadi": "Material topilmadi",
     "x.misolTopilmadi": "Misol topilmadi — tahlil o‘zgargan bo‘lishi mumkin, sahifani yangilang",
     "x.zaxiraTopilmadi": "Zaxira nusxa topilmadi",
-    "x.zaxiraSqliteEmas": "Bu fayl SQLite bazasi emas — MediaPrag zaxirasini (.db) tanlang",
+    "x.zaxiraSqliteEmas": "Bu fayl MediaPrag zaxirasi emas — yuklab olingan nusxani (.json.gz) yoki eski SQLite bazasini (.db) tanlang",
     "x.zaxiraJadvalYoq": "Bu MediaPrag bazasi emas: «{v}» jadvali yo‘q",
     "x.zaxiraButunEmas": "Fayl shikastlangan (SQLite butunlik tekshiruvidan o‘tmadi)",
     "x.zaxiraFaylYoq": "Fayl tanlanmagan",
@@ -72,7 +72,7 @@ export const xato = lugat(
     "x.materialTopilmadi": "Материал не найден",
     "x.misolTopilmadi": "Пример не найден — возможно, разметка изменилась; обновите страницу",
     "x.zaxiraTopilmadi": "Резервная копия не найдена",
-    "x.zaxiraSqliteEmas": "Файл не является базой SQLite — выберите резервную копию MediaPrag (.db)",
+    "x.zaxiraSqliteEmas": "Это не резервная копия MediaPrag — выберите скачанную копию (.json.gz) или старую базу SQLite (.db)",
     "x.zaxiraJadvalYoq": "Это не база MediaPrag: нет таблицы «{v}»",
     "x.zaxiraButunEmas": "Файл повреждён (не прошёл проверку целостности SQLite)",
     "x.zaxiraFaylYoq": "Файл не выбран",
@@ -131,7 +131,7 @@ export const xato = lugat(
     "x.materialTopilmadi": "Material not found",
     "x.misolTopilmadi": "Example not found — the annotation may have changed; reload the page",
     "x.zaxiraTopilmadi": "Backup not found",
-    "x.zaxiraSqliteEmas": "This file is not an SQLite database — choose a MediaPrag backup (.db)",
+    "x.zaxiraSqliteEmas": "This is not a MediaPrag backup — choose a downloaded backup (.json.gz) or an old SQLite database (.db)",
     "x.zaxiraJadvalYoq": "This is not a MediaPrag database: table “{v}” is missing",
     "x.zaxiraButunEmas": "The file is damaged (failed the SQLite integrity check)",
     "x.zaxiraFaylYoq": "No file selected",

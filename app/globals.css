@@ -1,95 +1,148 @@
 @import "tailwindcss";
 
 /* =========================================================================
-   MediaPrag-Analytics — dizayn tizimi
-   Ranglar yuqori kontrastga sozlangan: matn ≥ 7:1, grafik belgilari ≥ 4.5:1
+   MediaPrag-Analytics — «Aurora» dizayn tizimi
+   Orqa fonda sekin suzuvchi rangli nur, ustida yarim shaffof «shisha» kartalar.
+   Kontrast: oddiy matn ≥ 7:1, ikkinchi darajali matn ≥ 6:1, grafik belgilari ≥ 4.5:1
+   (kartaning eng yorqin nur ustidagi holati bo‘yicha hisoblangan).
    ========================================================================= */
 
 :root {
   color-scheme: light;
 
-  --bg: #e8e7e1;
-  --bg-2: #dedcd4;
+  --bg: #f4f5fb;
+  --bg-2: #e9ebf8;
   --surface: #ffffff;
-  --surface-2: #f4f3ef;
-  --ink: #07080a;
-  --ink-2: #212226;
-  --muted: #44454a;
-  --line: #cbcac1;
-  --line-strong: #7e7e75;
-  --brand: #0b2545;
-  --brand-2: #143a68;
+  --surface-2: #f1f2fa;
+  /* shisha kartalar */
+  --glass: rgba(255, 255, 255, 0.76);
+  --glass-strong: rgba(255, 255, 255, 0.9);
+  --glass-line: rgba(30, 27, 75, 0.1);
+  --glass-hi: rgba(255, 255, 255, 0.95);
+
+  --ink: #0b0d1f;
+  --ink-2: #242741;
+  --muted: #4a4e6a;
+  --line: #dcdff0;
+  --line-strong: #9a9ec0;
+
+  --brand: #4f46e5;
+  --brand-2: #4338ca;
   --brand-ink: #ffffff;
-  --accent: #0f5fc2;
-  --accent-soft: rgba(15, 95, 194, 0.12);
-  --danger: #a4161a;
-  --ok: #0b6b2e;
+  --brand-grad: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
+  --aurora: linear-gradient(100deg, #6366f1, #a855f7 35%, #ec4899 65%, #06b6d4);
+  --glow: 0 10px 28px -10px rgba(99, 102, 241, 0.6);
+  --accent: #4338ca;
+  --accent-soft: rgba(79, 70, 229, 0.14);
+  --danger: #be123c;
+  --ok: #047857;
+
+  /* sichqoncha ostidagi yorug‘lik */
+  --spot: rgba(99, 102, 241, 0.09);
+  --spot-line: rgba(124, 58, 237, 0.55);
+
+  /* sarlavhadagi nur */
+  --h1-a: #6d28d9;
+  --h1-b: #db2777;
 
   /* grafik seriyalari */
-  --s1: #0f5fc2;
-  --s2: #c2410c;
-  --s3: #5b21b6;
-  --grid: #cfcec5;
+  --s1: #4f46e5;
+  --s2: #db2777;
+  --s3: #0e7490;
+  --grid: #e0e2f0;
 
   /* sifat darajalari (past → yuqori) */
-  --lvl-0: #a4161a;
+  --lvl-0: #be123c;
   --lvl-1: #b45309;
   --lvl-2: #15803d;
-  --lvl-3: #0b4f2a;
+  --lvl-3: #065f46;
 
   /* matndagi belgilar */
-  --hl-muammo: rgba(164, 22, 26, 0.18);
-  --hl-muammo-line: #a4161a;
-  --hl-vosita: rgba(15, 95, 194, 0.16);
-  --hl-vosita-line: #0f5fc2;
+  --hl-muammo: rgba(225, 29, 72, 0.15);
+  --hl-muammo-line: #e11d48;
+  --hl-vosita: rgba(79, 70, 229, 0.15);
+  --hl-vosita-line: #4f46e5;
 
-  --shadow-sm: 0 1px 2px rgba(7, 8, 10, 0.08);
-  --shadow-md: 0 6px 20px -6px rgba(7, 8, 10, 0.18);
-  --shadow-lg: 0 24px 60px -20px rgba(7, 8, 10, 0.45);
-  --radius: 14px;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  /* orqa fon nuri */
+  --blob-1: #818cf8;
+  --blob-2: #c084fc;
+  --blob-3: #f472b6;
+  --blob-4: #22d3ee;
+  --blob-opacity: 0.42;
+  --grain-opacity: 0.035;
+  --grid-dot: rgba(30, 27, 75, 0.07);
+
+  --shadow-sm: 0 1px 2px rgba(30, 27, 75, 0.06), 0 4px 12px -6px rgba(30, 27, 75, 0.1);
+  --shadow-md: 0 18px 40px -16px rgba(49, 46, 129, 0.32);
+  --shadow-lg: 0 30px 80px -24px rgba(49, 46, 129, 0.45);
+  --radius: 18px;
+  --sidebar-w: 272px;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Qorong‘i mavzu: foydalanuvchi tanlagan (data-theme="dark") … */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #08090a;
-  --bg-2: #0e1013;
-  --surface: #16181c;
-  --surface-2: #1f2228;
-  --ink: #ffffff;
-  --ink-2: #e7e8ea;
-  --muted: #b6b8bd;
-  --line: #363a41;
-  --line-strong: #626771;
-  --brand: #9dc4f8;
-  --brand-2: #c2dbfc;
-  --brand-ink: #06182e;
-  --accent: #6ea8ff;
-  --accent-soft: rgba(110, 168, 255, 0.18);
-  --danger: #ff8a8a;
-  --ok: #4ade80;
+  --bg: #05060d;
+  --bg-2: #0a0c1b;
+  --surface: #101228;
+  --surface-2: #181b38;
+  --glass: rgba(16, 18, 40, 0.64);
+  --glass-strong: rgba(14, 16, 36, 0.86);
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --glass-hi: rgba(255, 255, 255, 0.06);
 
-  --s1: #5aa2ff;
-  --s2: #ff7f45;
-  --s3: #a78bfa;
-  --grid: #333840;
+  --ink: #f4f5ff;
+  --ink-2: #d9dcf7;
+  --muted: #a4a9cd;
+  --line: #262a4d;
+  --line-strong: #4b5083;
 
-  --lvl-0: #ff8a8a;
-  --lvl-1: #f5a524;
+  --brand: #5046e6;
+  --brand-2: #6157f0;
+  --brand-ink: #ffffff;
+  --brand-grad: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
+  --glow: 0 10px 34px -8px rgba(124, 58, 237, 0.7);
+  --accent: #a5b4fc;
+  --accent-soft: rgba(129, 140, 248, 0.22);
+  --danger: #fb7185;
+  --ok: #34d399;
+
+  --spot: rgba(129, 140, 248, 0.11);
+  --spot-line: rgba(167, 139, 250, 0.75);
+
+  --h1-a: #a78bfa;
+  --h1-b: #22d3ee;
+
+  --s1: #818cf8;
+  --s2: #f472b6;
+  --s3: #22d3ee;
+  --grid: #23274b;
+
+  --lvl-0: #fb7185;
+  --lvl-1: #fbbf24;
   --lvl-2: #4ade80;
   --lvl-3: #16a34a;
 
-  --hl-muammo: rgba(255, 138, 138, 0.26);
-  --hl-muammo-line: #ff8a8a;
-  --hl-vosita: rgba(110, 168, 255, 0.26);
-  --hl-vosita-line: #6ea8ff;
+  --hl-muammo: rgba(251, 113, 133, 0.26);
+  --hl-muammo-line: #fb7185;
+  --hl-vosita: rgba(129, 140, 248, 0.28);
+  --hl-vosita-line: #818cf8;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.7);
-  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+  --blob-1: #4f46e5;
+  --blob-2: #7c3aed;
+  --blob-3: #db2777;
+  --blob-4: #0891b2;
+  --blob-opacity: 0.5;
+  --grain-opacity: 0.06;
+  --grid-dot: rgba(255, 255, 255, 0.05);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 20px 44px -16px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
 }
 
 /* … yoki tizim sozlamasi bo‘yicha (tanlov «tizimdagidek» bo‘lsa) */
@@ -97,42 +150,69 @@
   :root:not([data-theme]) {
     color-scheme: dark;
 
-    --bg: #08090a;
-    --bg-2: #0e1013;
-    --surface: #16181c;
-    --surface-2: #1f2228;
-    --ink: #ffffff;
-    --ink-2: #e7e8ea;
-    --muted: #b6b8bd;
-    --line: #363a41;
-    --line-strong: #626771;
-    --brand: #9dc4f8;
-    --brand-2: #c2dbfc;
-    --brand-ink: #06182e;
-    --accent: #6ea8ff;
-    --accent-soft: rgba(110, 168, 255, 0.18);
-    --danger: #ff8a8a;
-    --ok: #4ade80;
+    --bg: #05060d;
+    --bg-2: #0a0c1b;
+    --surface: #101228;
+    --surface-2: #181b38;
+    --glass: rgba(16, 18, 40, 0.64);
+    --glass-strong: rgba(14, 16, 36, 0.86);
+    --glass-line: rgba(255, 255, 255, 0.09);
+    --glass-hi: rgba(255, 255, 255, 0.06);
 
-    --s1: #5aa2ff;
-    --s2: #ff7f45;
-    --s3: #a78bfa;
-    --grid: #333840;
+    --ink: #f4f5ff;
+    --ink-2: #d9dcf7;
+    --muted: #a4a9cd;
+    --line: #262a4d;
+    --line-strong: #4b5083;
 
-    --lvl-0: #ff8a8a;
-    --lvl-1: #f5a524;
+    --brand: #5046e6;
+    --brand-2: #6157f0;
+    --brand-ink: #ffffff;
+    --brand-grad: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
+    --glow: 0 10px 34px -8px rgba(124, 58, 237, 0.7);
+    --accent: #a5b4fc;
+    --accent-soft: rgba(129, 140, 248, 0.22);
+    --danger: #fb7185;
+    --ok: #34d399;
+
+    --spot: rgba(129, 140, 248, 0.11);
+    --spot-line: rgba(167, 139, 250, 0.75);
+
+    --h1-a: #a78bfa;
+    --h1-b: #22d3ee;
+
+    --s1: #818cf8;
+    --s2: #f472b6;
+    --s3: #22d3ee;
+    --grid: #23274b;
+
+    --lvl-0: #fb7185;
+    --lvl-1: #fbbf24;
     --lvl-2: #4ade80;
     --lvl-3: #16a34a;
 
-    --hl-muammo: rgba(255, 138, 138, 0.26);
-    --hl-muammo-line: #ff8a8a;
-    --hl-vosita: rgba(110, 168, 255, 0.26);
-    --hl-vosita-line: #6ea8ff;
+    --hl-muammo: rgba(251, 113, 133, 0.26);
+    --hl-muammo-line: #fb7185;
+    --hl-vosita: rgba(129, 140, 248, 0.28);
+    --hl-vosita-line: #818cf8;
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-    --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.7);
-    --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.8);
+    --blob-1: #4f46e5;
+    --blob-2: #7c3aed;
+    --blob-3: #db2777;
+    --blob-4: #0891b2;
+    --blob-opacity: 0.5;
+    --grain-opacity: 0.06;
+    --grid-dot: rgba(255, 255, 255, 0.05);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 20px 44px -16px rgba(0, 0, 0, 0.8);
+    --shadow-lg: 0 30px 80px -20px rgba(0, 0, 0, 0.85);
   }
+}
+
+/* Yig‘ilgan yon menyu (cookie bo‘yicha serverda qo‘yiladi — sahifa ochilganda sakramaydi) */
+:root[data-menyu="yigiq"] {
+  --sidebar-w: 92px;
 }
 
 /* Mavzu almashganda yangi ko‘rinish tugmadan aylana bo‘lib ochiladi (View Transitions) */
@@ -179,6 +259,10 @@ body {
   padding: 0;
 }
 
+html {
+  scrollbar-color: var(--line-strong) transparent;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
@@ -197,17 +281,37 @@ body {
   h3 {
     margin: 0;
     line-height: 1.2;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
   }
-  h1 { font-size: 26px; font-weight: 700; }
-  h2 { font-size: 17px; font-weight: 650; }
-  h3 { font-size: 14px; font-weight: 650; }
+  /* Sahifa sarlavhasi: matn rangida, vaqti-vaqti bilan ustidan rangli nur o‘tadi */
+  h1 {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+    background: linear-gradient(100deg, var(--ink) 0%, var(--ink) 38%, var(--h1-a) 50%, var(--h1-b) 58%, var(--ink) 70%, var(--ink) 100%);
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: h1-nur 10s var(--ease-out) 0.6s infinite;
+  }
+  h2 { font-size: 17px; font-weight: 750; }
+  h3 { font-size: 14px; font-weight: 700; }
   p { margin: 0; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
+  input[type="checkbox"],
+  input[type="radio"] { accent-color: var(--brand); }
 }
 
-::selection { background: var(--accent); color: #fff; }
+@keyframes h1-nur {
+  0% { background-position: 100% 0; }
+  28%, 100% { background-position: 0% 0; }
+}
+
+::selection { background: #7c3aed; color: #fff; }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -223,28 +327,499 @@ body {
   z-index: -1;
   overflow: hidden;
   background:
-    radial-gradient(1100px 620px at 12% -10%, color-mix(in oklab, var(--s1) 16%, transparent), transparent 70%),
-    radial-gradient(900px 560px at 92% 4%, color-mix(in oklab, var(--s2) 13%, transparent), transparent 72%),
-    linear-gradient(180deg, var(--bg-2), var(--bg) 46%);
+    radial-gradient(1200px 700px at 10% -15%, color-mix(in oklab, var(--blob-1) 18%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 55%);
+}
+/* nozik nuqta-to‘r, yuqorida ko‘rinadi va pastga qarab so‘nadi */
+.page-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(var(--grid-dot) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+}
+/* «don» — tekis gradientlarni jonliroq qiladi */
+.page-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  pointer-events: none;
 }
 
+/* Nur dog‘lari: blur filtri o‘rniga radial gradient — videokartaga yengil */
 .blob {
   position: absolute;
-  border-radius: 999px;
-  filter: blur(70px);
-  opacity: 0.3;
+  border-radius: 50%;
+  opacity: var(--blob-opacity);
+  will-change: transform;
+  animation: aurora-a 28s ease-in-out infinite;
+}
+.blob:nth-child(2) { animation-name: aurora-b; animation-duration: 34s; }
+.blob:nth-child(3) { animation-name: aurora-c; animation-duration: 40s; }
+.blob:nth-child(4) { animation-name: aurora-a; animation-duration: 46s; animation-direction: reverse; }
+
+@keyframes aurora-a {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  33% { transform: translate3d(8vw, 6vh, 0) rotate(30deg); }
+  66% { transform: translate3d(-5vw, 10vh, 0) rotate(-20deg); }
+}
+@keyframes aurora-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-10vw, 12vh, 0); }
+}
+@keyframes aurora-c {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  40% { transform: translate3d(9vw, -8vh, 0); }
+  75% { transform: translate3d(-6vw, -3vh, 0); }
+}
+
+/* ---------------------------------------------------------------- qobiq (yon menyu + kontent) */
+
+.app-main {
+  transition: padding-left 0.4s var(--ease-out);
+}
+@media (min-width: 1024px) {
+  .app-main.menyu-bilan { padding-left: var(--sidebar-w); }
+}
+
+.sidebar {
+  position: fixed;
+  z-index: 50;
+  top: 12px;
+  bottom: 12px;
+  left: 12px;
+  width: calc(var(--sidebar-w) - 24px);
+  /* display — Tailwind klasslarida (hidden lg:flex): bu yerda bersak, ular ishlamay qoladi */
+  flex-direction: column;
+  border-radius: 22px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-hi);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  transition: width 0.4s var(--ease-out);
+  overflow: hidden;
+}
+/* yig‘ilgan holatda yozuvlar yashirinadi, faqat belgilar qoladi */
+.sb-yozuv {
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.25s ease, max-width 0.4s var(--ease-out);
+  max-width: 220px;
+}
+:root[data-menyu="yigiq"] .sidebar .sb-yozuv {
+  opacity: 0;
+  max-width: 0;
+}
+:root[data-menyu="yigiq"] .sidebar .sb-faqat-yoyiq { display: none; }
+:root:not([data-menyu="yigiq"]) .sidebar .sb-faqat-yigiq { display: none; }
+
+.sb-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 13px;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.sb-link:hover { text-decoration: none; color: var(--ink); background: color-mix(in oklab, var(--brand) 9%, transparent); }
+.sb-link[data-faol="true"] { color: #fff; background: transparent; }
+.sb-link svg { flex: none; transition: transform 0.35s var(--ease-out); }
+.sb-link:hover svg { transform: scale(1.12) rotate(-6deg); }
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* aylanuvchi rangli halqa uchun burchak (CSS @property — gradientni animatsiya qilish mumkin) */
+@property --burchak {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes aylan {
+  to { --burchak: 360deg; }
+}
+
+.logo-mark {
+  position: relative;
+  isolation: isolate;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: var(--brand-grad);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.logo-mark::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: -1;
+  border-radius: 16px;
+  background: conic-gradient(from var(--burchak), #6366f1, #a855f7, #ec4899, #06b6d4, #6366f1);
+  filter: blur(7px);
+  opacity: 0.75;
+  animation: aylan 6s linear infinite;
+}
+.logo-mark-katta {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  font-size: 20px;
+}
+.logo-mark-katta::before { border-radius: 23px; inset: -4px; filter: blur(12px); }
+
+.sb-qidiruv {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 13px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--surface) 65%, transparent);
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, color 0.2s ease;
+}
+.sb-qidiruv:hover {
+  color: var(--ink);
+  border-color: color-mix(in oklab, var(--brand) 50%, var(--line));
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px transparent;
+}
+.avatar::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: 50%;
+  background: conic-gradient(from var(--burchak), #6366f1, #a855f7, #ec4899, #06b6d4, #6366f1);
+  animation: aylan 8s linear infinite;
+}
+.sb-profil { isolation: isolate; transition: background-color 0.2s ease; }
+.sb-profil:hover { text-decoration: none; background: color-mix(in oklab, var(--brand) 8%, transparent); }
+.sb-foydalanuvchi { display: flex; align-items: center; gap: 4px; }
+
+/* yig‘ilgan menyu: hammasi markazda, foydalanuvchi bloki ustun bo‘lib */
+:root[data-menyu="yigiq"] .sidebar .sb-ust { justify-content: center; padding-inline: 0; }
+:root[data-menyu="yigiq"] .sidebar .sb-foydalanuvchi { flex-direction: column; }
+:root[data-menyu="yigiq"] .sidebar .sb-profil { flex: none; padding: 4px; }
+:root[data-menyu="yigiq"] .sidebar .sb-link,
+:root[data-menyu="yigiq"] .sidebar .sb-qidiruv { gap: 0; justify-content: center; padding: 0; }
+
+.mobil-panel {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--glass-strong);
+  border-bottom: 1px solid var(--glass-line);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(300px, 86vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-strong);
+  border-right: 1px solid var(--glass-line);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+/* ---------------------------------------------------------------- tezkor qidiruv (Ctrl+K) */
+
+.buyruq-oyna {
+  border-radius: 22px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--shadow-lg), 0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent), inset 0 1px 0 var(--glass-hi);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+}
+.buyruq-oyna::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--aurora);
+  opacity: 0.9;
+}
+input.buyruq-input,
+input.buyruq-input:hover,
+input.buyruq-input:focus {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.buyruq-qator {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.buyruq-belgi {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.25s ease;
+}
+.buyruq-belgi[data-faol="true"] {
+  color: #fff;
+  background: var(--brand-grad);
+  border-color: transparent;
+  box-shadow: var(--glow);
+}
+.buyruq-aylana {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--brand);
+  animation: aylanish 0.7s linear infinite;
+}
+@keyframes aylanish {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------------------------------------------------------- oyna va xabarlar */
+
+.dialog-oyna {
+  border-radius: 22px;
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--glass-hi);
+  backdrop-filter: blur(28px) saturate(170%);
+  -webkit-backdrop-filter: blur(28px) saturate(170%);
+}
+.dialog-oyna::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  z-index: 1;
+  background: var(--aurora);
+}
+
+.toast {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--glass-strong);
+  border: 1px solid var(--glass-line);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+}
+.toast::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--brand-grad);
+}
+.toast[data-tur="error"]::before { background: var(--danger); }
+.toast-belgi {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--brand-grad);
+  box-shadow: var(--glow);
+}
+.toast[data-tur="error"] .toast-belgi { background: var(--danger); box-shadow: none; color: var(--surface); }
+
+/* ---------------------------------------------------------------- kirish sahifasi */
+
+.kirish-halqa {
+  position: relative;
+  isolation: isolate;
+  border-radius: 26px;
+  padding: 1.5px;
+}
+.kirish-halqa::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(from var(--burchak), transparent 0deg, #6366f1 70deg, #a855f7 140deg, #ec4899 200deg, #06b6d4 260deg, transparent 330deg);
+  animation: aylan 7s linear infinite;
+}
+.kirish-halqa::after {
+  content: "";
+  position: absolute;
+  inset: 8% 4%;
+  z-index: -2;
+  border-radius: inherit;
+  background: conic-gradient(from var(--burchak), #6366f1, #a855f7, #ec4899, #06b6d4, #6366f1);
+  filter: blur(48px);
+  opacity: 0.45;
+  animation: aylan 7s linear infinite;
+}
+.kirish-maydon { position: relative; }
+.kirish-maydon > input { padding-left: 38px; }
+.kirish-belgi {
+  position: absolute;
+  left: 13px;
+  top: 36px;
+  color: var(--muted);
+  pointer-events: none;
+  transition: color 0.2s ease, transform 0.3s var(--ease-out);
+}
+.kirish-maydon:focus-within .kirish-belgi { color: var(--brand); transform: scale(1.1); }
+
+/* ko‘rsatkich kartasidagi belgi */
+.kpi-belgi {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--brand-grad);
+  box-shadow: var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.4s var(--ease-out);
+}
+.card:hover .kpi-belgi { transform: rotate(-8deg) scale(1.08); }
+
+.kirish-halqa > .card {
+  border-radius: 24.5px;
+  background: var(--glass-strong);
+  border-color: transparent;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+/* sahifa va menyu bandlarining paydo bo‘lishi — JavaScript’siz ham ishlaydi */
+.sahifa-kirish { animation: sahifa-kirish 0.5s var(--ease-out) both; }
+@keyframes sahifa-kirish {
+  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+.sb-kirish { animation: sb-kirish 0.45s var(--ease-out) both; }
+@keyframes sb-kirish {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ---------------------------------------------------------------- karta */
 
 .card {
-  background: var(--surface);
-  border: 1px solid var(--line);
+  position: relative;
+  isolation: isolate;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 20px;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--glass-hi);
+  padding: 22px;
   min-width: 0;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
 }
+.card:hover {
+  box-shadow: var(--shadow-md), inset 0 1px 0 var(--glass-hi);
+}
+/* sichqoncha ostidagi yorug‘lik (koordinatalar Effektlar komponentida qo‘yiladi) */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, -300px), var(--spot), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+/* chegarada yuguruvchi rangli nur */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: radial-gradient(300px circle at var(--mx, 50%) var(--my, -300px), var(--spot-line), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.card:hover::before,
+.card:hover::after { opacity: 1; }
 
 .card-title {
   display: flex;
@@ -252,7 +827,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .hint {
@@ -262,63 +837,144 @@ body {
 
 .eyebrow {
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.09em;
+  font-weight: 750;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
+}
+/* sahifa sarlavhasi ustidagi yozuv: rangli nuqta bilan */
+.eyebrow:has(+ h1) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow:has(+ h1)::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--aurora);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  animation: nuqta 2.6s ease-in-out infinite;
+}
+@keyframes nuqta {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent-soft); }
+  50% { box-shadow: 0 0 0 7px transparent; }
+}
+
+.text-aurora {
+  background: var(--aurora);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: aurora-matn 6s linear infinite;
+}
+@keyframes aurora-matn {
+  to { background-position: 200% 0; }
 }
 
 /* ---------------------------------------------------------------- tugma */
 
 .btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   font: inherit;
-  font-weight: 600;
+  font-weight: 650;
   padding: 9px 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--line-strong);
-  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--line-strong) 80%, transparent);
+  background: var(--glass-strong);
   color: var(--ink);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  translate: var(--tx, 0px) var(--ty, 0px);
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.25s ease, translate 0.3s var(--ease-out);
 }
-.btn:hover { background: var(--surface-2); border-color: var(--ink-2); text-decoration: none; }
+.btn:hover {
+  background: var(--surface);
+  border-color: color-mix(in oklab, var(--brand) 55%, var(--line-strong));
+  box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--brand) 60%, transparent);
+  text-decoration: none;
+}
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-ink);
-  box-shadow: var(--shadow-sm);
+  background: var(--brand-grad);
+  background-size: 160% 100%;
+  background-position: 0% 0;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: background-position 0.5s var(--ease-out), box-shadow 0.25s ease, translate 0.3s var(--ease-out);
 }
-.btn-primary:hover { background: var(--brand-2); border-color: var(--brand-2); color: var(--brand-ink); }
+.btn-primary:hover {
+  background: var(--brand-grad);
+  background-size: 160% 100%;
+  background-position: 100% 0;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 14px 36px -10px rgba(124, 58, 237, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+/* ustidan o‘tadigan yaltiroq chiziq */
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.38) 50%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform 0.8s var(--ease-out);
+}
+.btn-primary:hover::after { transform: translateX(130%); }
 
-.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 55%, var(--line)); }
-.btn-danger:hover { background: color-mix(in oklab, var(--danger) 12%, var(--surface)); border-color: var(--danger); }
+.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 50%, var(--line)); }
+.btn-danger:hover {
+  background: color-mix(in oklab, var(--danger) 10%, var(--surface));
+  border-color: var(--danger);
+  box-shadow: 0 6px 18px -10px color-mix(in oklab, var(--danger) 70%, transparent);
+}
 
-.btn-sm { padding: 5px 11px; font-size: 12.5px; border-radius: 8px; }
+.btn-sm { padding: 5px 11px; font-size: 12.5px; border-radius: 10px; }
 .btn-ghost { border-color: transparent; background: transparent; }
-.btn-ghost:hover { background: var(--surface-2); border-color: var(--line); }
+.btn-ghost:hover { background: color-mix(in oklab, var(--brand) 9%, transparent); border-color: transparent; box-shadow: none; }
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.icon-btn:hover { background: color-mix(in oklab, var(--brand) 10%, transparent); color: var(--ink); }
 
 /* ---------------------------------------------------------------- forma */
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   min-width: 0;
 }
 .field > span {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 700;
   color: var(--ink-2);
 }
 
 input[type="text"],
+input[type="email"],
+input[type="password"],
 input[type="search"],
 input[type="url"],
 input[type="date"],
@@ -330,17 +986,22 @@ textarea {
   min-width: 0;
   color: var(--ink);
   background: var(--surface);
-  border: 1.5px solid var(--line-strong);
-  border-radius: 10px;
-  padding: 8px 11px;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  border: 1px solid color-mix(in oklab, var(--line-strong) 85%, transparent);
+  border-radius: 12px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, background-color 0.2s ease;
+}
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in oklab, var(--brand) 45%, var(--line-strong));
 }
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 8px 24px -14px color-mix(in oklab, var(--brand) 80%, transparent);
 }
 textarea { resize: vertical; min-height: 76px; line-height: 1.6; }
 
@@ -351,47 +1012,67 @@ textarea { resize: vertical; min-height: 76px; line-height: 1.6; }
   gap: 6px;
   padding: 6px 13px;
   border-radius: 999px;
-  border: 1.5px solid var(--line-strong);
-  background: var(--surface);
+  border: 1px solid color-mix(in oklab, var(--line-strong) 80%, transparent);
+  background: var(--glass-strong);
   color: var(--ink);
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.25s ease, transform 0.2s var(--ease-out);
 }
-.chip:hover { border-color: var(--ink-2); }
+.chip:hover { border-color: color-mix(in oklab, var(--brand) 55%, var(--line-strong)); transform: translateY(-1px); }
+.chip:active { transform: scale(0.97); }
 .chip[data-on="true"] {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-ink);
+  background: var(--brand-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--glow);
 }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
 
 /* ---------------------------------------------------------------- jadval */
 
-.table-wrap { overflow-x: auto; border-radius: 10px; }
+.table-wrap { overflow-x: auto; border-radius: 12px; }
 table.data { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 table.data th {
   text-align: left;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 9px 11px;
-  border-bottom: 2px solid var(--line-strong);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-strong);
   white-space: nowrap;
 }
 table.data td {
-  padding: 10px 11px;
+  padding: 11px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: top;
+  transition: background-color 0.2s ease;
 }
-table.data tbody tr { transition: background-color 0.14s ease; }
-table.data tbody tr:hover td { background: var(--surface-2); }
+table.data tbody tr:last-child td { border-bottom-color: transparent; }
+table.data tbody tr:hover td { background: color-mix(in oklab, var(--brand) 7%, transparent); }
+table.data tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
 table.data .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 table.data .id { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+
+/* qatorlar navbatma-navbat paydo bo‘ladi */
+table.data tbody tr { animation: qator-kirish 0.5s var(--ease-out) both; }
+table.data tbody tr:nth-child(2) { animation-delay: 0.03s; }
+table.data tbody tr:nth-child(3) { animation-delay: 0.06s; }
+table.data tbody tr:nth-child(4) { animation-delay: 0.09s; }
+table.data tbody tr:nth-child(5) { animation-delay: 0.12s; }
+table.data tbody tr:nth-child(6) { animation-delay: 0.15s; }
+table.data tbody tr:nth-child(7) { animation-delay: 0.18s; }
+table.data tbody tr:nth-child(8) { animation-delay: 0.21s; }
+table.data tbody tr:nth-child(9) { animation-delay: 0.24s; }
+table.data tbody tr:nth-child(n + 10) { animation-delay: 0.27s; }
+@keyframes qator-kirish {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
 
 /* ---------------------------------------------------------------- belgilar */
 
@@ -402,28 +1083,28 @@ table.data .id { font-variant-numeric: tabular-nums; color: var(--muted); white-
   padding: 3px 11px 3px 8px;
   border-radius: 999px;
   font-size: 12.5px;
-  font-weight: 650;
+  font-weight: 700;
   white-space: nowrap;
-  background: var(--surface-2);
-  border: 1.5px solid var(--line-strong);
+  background: var(--glass-strong);
+  border: 1px solid color-mix(in oklab, var(--line-strong) 75%, transparent);
   color: var(--ink);
 }
-.badge i { width: 9px; height: 9px; border-radius: 50%; background: currentColor; }
-.badge.lvl-0 i { background: var(--lvl-0); }
-.badge.lvl-1 i { background: var(--lvl-1); }
-.badge.lvl-2 i { background: var(--lvl-2); }
-.badge.lvl-3 i { background: var(--lvl-3); }
+.badge i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.badge.lvl-0 i { background: var(--lvl-0); box-shadow: 0 0 0 3px color-mix(in oklab, var(--lvl-0) 22%, transparent); }
+.badge.lvl-1 i { background: var(--lvl-1); box-shadow: 0 0 0 3px color-mix(in oklab, var(--lvl-1) 22%, transparent); }
+.badge.lvl-2 i { background: var(--lvl-2); box-shadow: 0 0 0 3px color-mix(in oklab, var(--lvl-2) 22%, transparent); }
+.badge.lvl-3 i { background: var(--lvl-3); box-shadow: 0 0 0 3px color-mix(in oklab, var(--lvl-3) 22%, transparent); }
 
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 2px 9px;
-  border-radius: 7px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 550;
-  background: var(--surface-2);
-  border: 1px solid var(--line-strong);
+  font-weight: 600;
+  background: color-mix(in oklab, var(--brand) 8%, var(--surface));
+  border: 1px solid color-mix(in oklab, var(--brand) 22%, var(--line));
   color: var(--ink-2);
 }
 
@@ -450,6 +1131,24 @@ mark.hl.vosita {
 }
 mark.hl.yangi { animation: hl-pulse 0.9s ease-out; }
 
+/* ---------------------------------------------------------------- yuklanish */
+
+.skeleton {
+  border-radius: 12px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in oklab, var(--line) 55%, transparent) 20%,
+    color-mix(in oklab, var(--brand) 14%, var(--surface-2)) 40%,
+    color-mix(in oklab, var(--line) 55%, transparent) 60%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -50% 0; }
+}
+
 /* ---------------------------------------------------------------- turli */
 
 .divider { height: 1px; background: var(--line); border: 0; }
@@ -461,6 +1160,7 @@ mark.hl.yangi { animation: hl-pulse 0.9s ease-out; }
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }

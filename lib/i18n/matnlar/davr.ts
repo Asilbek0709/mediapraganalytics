@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** «Davrlarni taqqoslash» va «Reyting» kartalari, ularning Excel varaqlari. */
 export const davrMatnlari = lugat(

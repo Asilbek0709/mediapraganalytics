@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Check, CircleAlert } from "lucide-react";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
 import { spring } from "./motion";
@@ -32,7 +33,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed right-4 top-[76px] z-[100] flex w-[min(400px,calc(100vw-2rem))] flex-col gap-2">
+      <div className="pointer-events-none fixed right-4 top-[70px] z-[100] lg:top-5 flex w-[min(400px,calc(100vw-2rem))] flex-col gap-2">
         <AnimatePresence initial={false}>
           {xabarlar.map((x) => (
             <motion.div
@@ -42,14 +43,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 40, scale: 0.92, transition: { duration: 0.18 } }}
               transition={spring}
-              className="pointer-events-auto rounded-xl border-2 px-4 py-3 text-[13.5px] font-semibold shadow-lg"
-              style={{
-                background: x.tur === "error" ? "var(--danger)" : "var(--brand)",
-                borderColor: x.tur === "error" ? "var(--danger)" : "var(--brand)",
-                color: x.tur === "error" ? "#fff" : "var(--brand-ink)",
-              }}
+              className="toast pointer-events-auto flex items-start gap-3 px-4 py-3 text-[13.5px] font-semibold"
+              data-tur={x.tur}
             >
-              {x.matn}
+              <span className="toast-belgi">{x.tur === "error" ? <CircleAlert size={16} strokeWidth={2.4} /> : <Check size={16} strokeWidth={2.6} />}</span>
+              <span className="min-w-0 flex-1 pt-px">{x.matn}</span>
             </motion.div>
           ))}
         </AnimatePresence>

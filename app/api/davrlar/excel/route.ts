@@ -6,19 +6,21 @@ import { tarjimon } from "@/lib/i18n";
 import { joriyTil } from "@/lib/i18n/server";
 import { ApiError } from "@/lib/queries";
 import { faylSarlavhasi, xatoJavobi } from "@/lib/route";
+import { apiTalab } from "@/lib/sessiya";
 
 export const dynamic = "force-dynamic";
 
 /** Ikki davrni taqqoslash: a_dan, a_gacha, b_dan, b_gacha + Analitika filtrlari (turi, nashr_id, janr, dan, gacha). */
 export async function GET(req: Request) {
   try {
+    await apiTalab(["admin", "kuzatuvchi"]);
     const sp = new URL(req.url).searchParams;
     const filtr = filtrniTekshirish(Object.fromEntries(sp));
     const A = { dan: sp.get("a_dan") ?? "", gacha: sp.get("a_gacha") ?? "" };
     const B = { dan: sp.get("b_dan") ?? "", gacha: sp.get("b_gacha") ?? "" };
     if (!oraliqmi(A) || !oraliqmi(B)) throw new ApiError(422, "dv.notogri");
 
-    const a = analitika(filtr);
+    const a = await analitika(filtr);
     const d = davrTaqqoslash(a.materiallar, A, B, a.muammolar);
     const til = await joriyTil();
     const { t, media, atama } = tarjimon(til);

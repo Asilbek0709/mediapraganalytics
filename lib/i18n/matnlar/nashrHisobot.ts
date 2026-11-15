@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** «Nashr hisoboti» — redaksion tahlil uchun PDF va uni ochish kartasi. */
 export const nashrHisobotMatnlari = lugat(

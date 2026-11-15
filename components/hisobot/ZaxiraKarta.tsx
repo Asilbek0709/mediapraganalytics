@@ -11,7 +11,7 @@ import { api, xatoMatni } from "@/lib/client";
 import { sanaVaqt } from "@/lib/format";
 import type { Kalit } from "@/lib/i18n";
 import type { Zaxira, ZaxiraHolati } from "@/lib/zaxira";
-import type { Statistika, ZaxiraTuri } from "@/lib/zaxiraFayl";
+import type { Statistika, ZaxiraTuri } from "@/lib/zaxiraFormat";
 
 const TUR_RANGI: Record<ZaxiraTuri, string> = {
   qolda: "var(--accent)",
@@ -145,7 +145,7 @@ export function ZaxiraKarta({ boshHolat }: { boshHolat: ZaxiraHolati }) {
             <input
               ref={faylRef}
               type="file"
-              accept=".db,.sqlite,.sqlite3"
+              accept=".gz,.json.gz,.db,.sqlite,.sqlite3"
               hidden
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -161,7 +161,7 @@ export function ZaxiraKarta({ boshHolat }: { boshHolat: ZaxiraHolati }) {
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="eyebrow">{t("zx.joriy")}</span>
           <span className="mono font-bold">{holat.baza}</span>
-          <span className="hint">{hajm(holat.hajm)}</span>
+          {holat.hajm != null && <span className="hint">{hajm(holat.hajm)}</span>}
           {s.metodika_versiya != null && <span className="tag">{t("u.metodikaV", { v: s.metodika_versiya })}</span>}
         </div>
         <p className="mt-1 text-[13.5px] font-semibold">{tarkib(s)}</p>
@@ -241,7 +241,7 @@ export function ZaxiraKarta({ boshHolat }: { boshHolat: ZaxiraHolati }) {
         {t("zx.avtoIzoh", { a: holat.saqlanadi.avto ?? 0, b: holat.saqlanadi.tiklashdan_oldin ?? 0 })}
       </p>
       <p className="mt-2 text-[13px] font-semibold [overflow-wrap:anywhere]" style={{ color: "var(--lvl-1)" }}>
-        {t("zx.papkaIzoh", { v: holat.papka })}
+        {t("zx.papkaIzoh")}
       </p>
 
       {tanlangan?.statistika && (

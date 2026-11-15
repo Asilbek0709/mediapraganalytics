@@ -19,6 +19,7 @@ if not exist ".next\BUILD_ID" (
     call npm run build
 )
 
+rem Baza: .env.local dagi DATABASE_URL (Supabase) yoki kompyuterdagi PGlite (datapglite)
 echo.
 echo [MediaPrag] Platforma: http://localhost:3100
 echo [MediaPrag] To'xtatish uchun shu oynani yoping yoki Ctrl+C bosing.

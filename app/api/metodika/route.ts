@@ -3,8 +3,8 @@ import { metodikaSaqlash, metodikaTolik } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
-export const GET = () => handle(() => metodikaTolik());
+export const GET = () => handle(() => metodikaTolik(), 200, ["admin"]);
 export const PUT = async (req: Request) => {
   const body = await req.json();
-  return handle(() => metodikaSaqlash(body));
+  return handle(() => metodikaSaqlash(body), 200, ["admin"]);
 };

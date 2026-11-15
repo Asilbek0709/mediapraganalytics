@@ -10,39 +10,37 @@
  *
  * Barcha vaznlar, ballar va jarimalar bazadagi «Metodika» bo‘limidan olinadi.
  */
-import { all, one, run } from "./db";
-import type { IzohJarima, Kategoriya, Metodika, Natija, ShkalaOraliq, TahlilKirish, Yetishmaydi } from "./types";
+import { all, one, run } from "./db.ts";
+import type { IzohJarima, Kategoriya, Metodika, Natija, ShkalaOraliq, TahlilKirish, Yetishmaydi } from "./types.ts";
 
 export const MEZON_KODLARI = ["K1", "K2", "K3", "K4", "K5"] as const;
 export type MezonKod = (typeof MEZON_KODLARI)[number];
 
 export const MUNOSABATLAR = [["sar_lid"], ["lid_matn"], ["sar_matn"]] as const;
 
-export function metodikaniYuklash(): Metodika {
-  const sozlama = (kalit: string) =>
-    (one<{ qiymat: string }>("SELECT qiymat FROM sozlamalar WHERE kalit = ?", [kalit])?.qiymat ?? "");
-
+export async function metodikaniYuklash(): Promise<Metodika> {
+  const sozlamalar = Object.fromEntries(
+    (await all<{ kalit: string; qiymat: string }>("SELECT kalit, qiymat FROM sozlamalar")).map((r) => [r.kalit, r.qiymat]),
+  );
+  const lugatQatorlari = await all<{ turkum: string; kod: string; qiymat: number }>(
+    "SELECT turkum, kod, qiymat FROM lugat WHERE turkum IN ('muvofiqlik', 'kompozitsiya') ORDER BY turkum, tartib",
+  );
   const lugat = (turkum: string) =>
-    Object.fromEntries(
-      all<{ kod: string; qiymat: number }>(
-        "SELECT kod, qiymat FROM lugat WHERE turkum = ? ORDER BY tartib",
-        [turkum],
-      ).map((r) => [r.kod, r.qiymat]),
-    );
+    Object.fromEntries(lugatQatorlari.filter((r) => r.turkum === turkum).map((r) => [r.kod, r.qiymat]));
 
   const kategoriyalar: Record<string, Kategoriya> = Object.fromEntries(
-    all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib").map((k) => [k.kod, k]),
+    (await all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib")).map((k) => [k.kod, k]),
   );
 
   return {
-    versiya: Number(sozlama("metodika_versiya") || 1),
+    versiya: Number(sozlamalar.metodika_versiya || 1),
     vaznlar: Object.fromEntries(
-      all<{ kod: string; vazn: number }>("SELECT kod, vazn FROM mezonlar ORDER BY kod").map((r) => [r.kod, r.vazn]),
+      (await all<{ kod: string; vazn: number }>("SELECT kod, vazn FROM mezonlar ORDER BY kod")).map((r) => [r.kod, r.vazn]),
     ),
     muvofiqlik: lugat("muvofiqlik"),
     kompozitsiya: lugat("kompozitsiya"),
     kategoriyalar,
-    shkala: (JSON.parse(sozlama("shkala") || "[]") as ShkalaOraliq[]).sort((a, b) => a.gacha - b.gacha),
+    shkala: (JSON.parse(sozlamalar.shkala || "[]") as ShkalaOraliq[]).sort((a, b) => a.gacha - b.gacha),
   };
 }
 
@@ -140,15 +138,15 @@ export function hisoblash(
   return natija;
 }
 
-export function tahlilNatijasiniYangilash(materialId: number, m: Metodika): Natija | null {
-  const row = one<TahlilKirish & { sarlavha_turlari: string }>(
+export async function tahlilNatijasiniYangilash(materialId: number, m: Metodika): Promise<Natija | null> {
+  const row = await one<TahlilKirish & { sarlavha_turlari: string }>(
     "SELECT * FROM tahlillar WHERE material_id = ?",
     [materialId],
   );
   if (!row) return null;
-  const belgilar = all<{ kategoriya: string }>("SELECT kategoriya FROM belgilar WHERE material_id = ?", [materialId]);
+  const belgilar = await all<{ kategoriya: string }>("SELECT kategoriya FROM belgilar WHERE material_id = ?", [materialId]);
   const n = hisoblash(row, belgilar, m);
-  run(
+  await run(
     `UPDATE tahlillar SET k1 = ?, k2 = ?, k3 = ?, k4 = ?, k5 = ?, lpsi = ?, daraja = ?, metodika_versiya = ?
      WHERE material_id = ?`,
     [n.k1, n.k2, n.k3, n.k4, n.k5, n.lpsi, n.daraja, m.versiya, materialId],
@@ -157,16 +155,16 @@ export function tahlilNatijasiniYangilash(materialId: number, m: Metodika): Nati
 }
 
 /** Ekspert tahlilining ballarini joriy metodika bo‘yicha qayta hisoblab, bazaga yozadi. */
-export function ekspertTahliliNatijasiniYangilash(ekspertTahlilId: number, m: Metodika): Natija | null {
-  const row = one<TahlilKirish & { sarlavha_turlari: string }>("SELECT * FROM ekspert_tahlillari WHERE id = ?", [
+export async function ekspertTahliliNatijasiniYangilash(ekspertTahlilId: number, m: Metodika): Promise<Natija | null> {
+  const row = await one<TahlilKirish & { sarlavha_turlari: string }>("SELECT * FROM ekspert_tahlillari WHERE id = ?", [
     ekspertTahlilId,
   ]);
   if (!row) return null;
-  const belgilar = all<{ kategoriya: string }>("SELECT kategoriya FROM ekspert_belgilari WHERE ekspert_tahlil_id = ?", [
+  const belgilar = await all<{ kategoriya: string }>("SELECT kategoriya FROM ekspert_belgilari WHERE ekspert_tahlil_id = ?", [
     ekspertTahlilId,
   ]);
   const n = hisoblash(row, belgilar, m);
-  run(
+  await run(
     `UPDATE ekspert_tahlillari SET k1 = ?, k2 = ?, k3 = ?, k4 = ?, k5 = ?, lpsi = ?, daraja = ?, metodika_versiya = ?
      WHERE id = ?`,
     [n.k1, n.k2, n.k3, n.k4, n.k5, n.lpsi, n.daraja, m.versiya, ekspertTahlilId],
@@ -175,10 +173,10 @@ export function ekspertTahliliNatijasiniYangilash(ekspertTahlilId: number, m: Me
 }
 
 /** Asosiy va ekspert tahlillarining barchasini qayta hisoblaydi; jami sonini qaytaradi. */
-export function hammasiniQaytaHisoblash(m: Metodika): number {
-  const ids = all<{ material_id: number }>("SELECT material_id FROM tahlillar");
-  for (const { material_id } of ids) tahlilNatijasiniYangilash(material_id, m);
-  const ekspertlar = all<{ id: number }>("SELECT id FROM ekspert_tahlillari");
-  for (const { id } of ekspertlar) ekspertTahliliNatijasiniYangilash(id, m);
+export async function hammasiniQaytaHisoblash(m: Metodika): Promise<number> {
+  const ids = await all<{ material_id: number }>("SELECT material_id FROM tahlillar");
+  for (const { material_id } of ids) await tahlilNatijasiniYangilash(material_id, m);
+  const ekspertlar = await all<{ id: number }>("SELECT id FROM ekspert_tahlillari");
+  for (const { id } of ekspertlar) await ekspertTahliliNatijasiniYangilash(id, m);
   return ids.length + ekspertlar.length;
 }

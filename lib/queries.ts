@@ -1,7 +1,7 @@
 /** Baza bilan ishlovchi amallar: mediabaza, tahlil va metodika. */
-import { all, hozir, one, run, transaction } from "./db";
-import { hammasiniQaytaHisoblash, hisoblash, metodikaniYuklash, tahlilNatijasiniYangilash, MEZON_KODLARI } from "./scoring";
-import type { Kalit, Param, Xabar } from "./i18n";
+import { all, hozir, one, run, transaction } from "./db.ts";
+import { hammasiniQaytaHisoblash, hisoblash, metodikaniYuklash, tahlilNatijasiniYangilash, MEZON_KODLARI } from "./scoring.ts";
+import type { Kalit, Param, Xabar } from "./i18n/index.ts";
 import type {
   Belgi,
   Holat,
@@ -17,7 +17,7 @@ import type {
   ShkalaOraliq,
   Tahlil,
   TahlilKirish,
-} from "./types";
+} from "./types.ts";
 
 /** Foydalanuvchiga ko‘rsatiladigan xato: matn o‘rniga tarjima kaliti (javobda foydalanuvchi tiliga o‘giriladi). */
 export class ApiError extends Error {
@@ -41,8 +41,8 @@ const matn = (v: unknown): string | null => {
 
 // ------------------------------------------------------------------ nashrlar
 
-export function nashrlarRoyxati() {
-  return all<{ id: number; nomi: string; turi: MediaTuri; materiallar_soni: number }>(
+export async function nashrlarRoyxati() {
+  return await all<{ id: number; nomi: string; turi: MediaTuri; materiallar_soni: number }>(
     `SELECT n.id, n.nomi, n.turi, COUNT(m.id) AS materiallar_soni
      FROM nashrlar n LEFT JOIN materiallar m ON m.nashr_id = n.id
      GROUP BY n.id ORDER BY n.turi, n.nomi`,
@@ -56,30 +56,30 @@ function nashrTekshir(nomi: unknown, turi: unknown): { nomi: string; turi: Media
   return { nomi: n, turi };
 }
 
-export function nashrQoshish(data: unknown) {
+export async function nashrQoshish(data: unknown) {
   const { nomi, turi } = nashrTekshir((data as Record<string, unknown>)?.nomi, (data as Record<string, unknown>)?.turi);
-  if (one("SELECT 1 FROM nashrlar WHERE nomi = ?", [nomi])) {
+  if (await one("SELECT 1 FROM nashrlar WHERE nomi = ?", [nomi])) {
     throw new ApiError(409, "x.nashrMavjud");
   }
-  const r = run("INSERT INTO nashrlar (nomi, turi) VALUES (?, ?)", [nomi, turi]);
-  return { id: Number(r.lastInsertRowid) };
+  const r = await one<{ id: number }>("INSERT INTO nashrlar (nomi, turi) VALUES (?, ?) RETURNING id", [nomi, turi]);
+  return { id: r!.id };
 }
 
-export function nashrTahrirlash(id: number, data: unknown) {
+export async function nashrTahrirlash(id: number, data: unknown) {
   const { nomi, turi } = nashrTekshir((data as Record<string, unknown>)?.nomi, (data as Record<string, unknown>)?.turi);
-  if (one("SELECT 1 FROM nashrlar WHERE nomi = ? AND id <> ?", [nomi, id])) {
+  if (await one("SELECT 1 FROM nashrlar WHERE nomi = ? AND id <> ?", [nomi, id])) {
     throw new ApiError(409, "x.nashrMavjud");
   }
-  const r = run("UPDATE nashrlar SET nomi = ?, turi = ? WHERE id = ?", [nomi, turi, id]);
+  const r = await run("UPDATE nashrlar SET nomi = ?, turi = ? WHERE id = ?", [nomi, turi, id]);
   if (!r.changes) throw new ApiError(404, "x.nashrTopilmadi");
   return { id };
 }
 
-export function nashrOchirish(id: number) {
-  if (one("SELECT 1 FROM materiallar WHERE nashr_id = ? LIMIT 1", [id])) {
+export async function nashrOchirish(id: number) {
+  if (await one("SELECT 1 FROM materiallar WHERE nashr_id = ? LIMIT 1", [id])) {
     throw new ApiError(409, "x.nashrdaMateriallar");
   }
-  const r = run("DELETE FROM nashrlar WHERE id = ?", [id]);
+  const r = await run("DELETE FROM nashrlar WHERE id = ?", [id]);
   if (!r.changes) throw new ApiError(404, "x.nashrTopilmadi");
   return { ok: true };
 }
@@ -103,11 +103,11 @@ export interface MaterialFiltr {
   holat?: Holat;
 }
 
-export function materiallarRoyxati(f: MaterialFiltr = {}): Material[] {
+export async function materiallarRoyxati(f: MaterialFiltr = {}): Promise<Material[]> {
   const shartlar: string[] = [];
   const params: unknown[] = [];
   if (f.q) {
-    shartlar.push("(m.sarlavha LIKE ? OR m.lid LIKE ? OR m.matn LIKE ? OR m.mavzu LIKE ?)");
+    shartlar.push("(m.sarlavha ILIKE ? OR m.lid ILIKE ? OR m.matn ILIKE ? OR m.mavzu ILIKE ?)");
     params.push(...Array(4).fill(`%${f.q}%`));
   }
   if (f.nashr_id) {
@@ -135,11 +135,11 @@ export function materiallarRoyxati(f: MaterialFiltr = {}): Material[] {
   else if (f.holat === "tahlil_qilinmagan") shartlar.push("t.material_id IS NULL");
 
   const sql = `${MATERIAL_SELECT}${shartlar.length ? ` WHERE ${shartlar.join(" AND ")}` : ""} ORDER BY m.id DESC`;
-  return all<Material>(sql, params);
+  return await all<Material>(sql, params);
 }
 
-export function materialOlish(id: number): Material {
-  const row = one<Material>(`${MATERIAL_SELECT} WHERE m.id = ?`, [id]);
+export async function materialOlish(id: number): Promise<Material> {
+  const row = await one<Material>(`${MATERIAL_SELECT} WHERE m.id = ?`, [id]);
   if (!row) throw new ApiError(404, "x.materialTopilmadi");
   return row;
 }
@@ -155,10 +155,10 @@ interface MaterialKirish {
   matn: string | null;
 }
 
-function materialTekshir(data: unknown): MaterialKirish {
+async function materialTekshir(data: unknown): Promise<MaterialKirish> {
   const d = (data ?? {}) as Record<string, unknown>;
   const nashrId = Number(d.nashr_id);
-  if (!nashrId || !one("SELECT 1 FROM nashrlar WHERE id = ?", [nashrId])) {
+  if (!nashrId || !await one("SELECT 1 FROM nashrlar WHERE id = ?", [nashrId])) {
     throw new ApiError(422, "x.nashrniTanlang");
   }
   const sarlavha = matn(d.sarlavha);
@@ -181,21 +181,21 @@ function materialTekshir(data: unknown): MaterialKirish {
   };
 }
 
-export function materialQoshish(data: unknown) {
-  const m = materialTekshir(data);
+export async function materialQoshish(data: unknown) {
+  const m = await materialTekshir(data);
   const vaqt = hozir();
-  const r = run(
+  const r = await one<{ id: number }>(
     `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
     [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, vaqt, vaqt],
   );
-  return { id: Number(r.lastInsertRowid) };
+  return { id: r!.id };
 }
 
-export function materialTahrirlash(id: number, data: unknown) {
-  materialOlish(id);
-  const m = materialTekshir(data);
-  run(
+export async function materialTahrirlash(id: number, data: unknown) {
+  await materialOlish(id);
+  const m = await materialTekshir(data);
+  await run(
     `UPDATE materiallar SET nashr_id = ?, sana = ?, janr = ?, mavzu = ?, havola = ?, sarlavha = ?,
             lid = ?, matn = ?, yangilangan = ? WHERE id = ?`,
     [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, hozir(), id],
@@ -203,38 +203,38 @@ export function materialTahrirlash(id: number, data: unknown) {
   return { id };
 }
 
-export function materialOchirish(id: number) {
-  const r = run("DELETE FROM materiallar WHERE id = ?", [id]);
+export async function materialOchirish(id: number) {
+  const r = await run("DELETE FROM materiallar WHERE id = ?", [id]);
   if (!r.changes) throw new ApiError(404, "x.materialTopilmadi");
   return { ok: true };
 }
 
 // -------------------------------------------------------------------- tahlil
 
-function kodlar(turkum: string): Set<string> {
-  return new Set(all<{ kod: string }>("SELECT kod FROM lugat WHERE turkum = ?", [turkum]).map((r) => r.kod));
+async function kodlar(turkum: string): Promise<Set<string>> {
+  return new Set((await all<{ kod: string }>("SELECT kod FROM lugat WHERE turkum = ?", [turkum])).map((r) => r.kod));
 }
 
 export interface TahlilSaqlash extends TahlilKirish {
   belgilar?: Belgi[];
 }
 
-export function tahlilniTekshirish(data: TahlilSaqlash): {
+export async function tahlilniTekshirish(data: TahlilSaqlash): Promise<{
   tahlil: Required<Omit<TahlilKirish, "sarlavha_turlari">> & { sarlavha_turlari: string[] };
   belgilar: Belgi[];
-} {
+}> {
   const xatolar: Xabar[] = [];
   const turlari = Array.isArray(data.sarlavha_turlari) ? data.sarlavha_turlari : [];
-  const sarlavhaKodlari = kodlar("sarlavha_turi");
+  const sarlavhaKodlari = await kodlar("sarlavha_turi");
   const notogri = turlari.filter((t) => !sarlavhaKodlari.has(t));
   if (notogri.length) xatolar.push({ k: "x.nomalumSarlavhaTuri", p: { v: notogri.join(", ") } });
 
-  const muvofiqlik = kodlar("muvofiqlik");
+  const muvofiqlik = await kodlar("muvofiqlik");
   for (const maydon of ["sar_lid", "lid_matn", "sar_matn"] as const) {
     const v = data[maydon];
     if (v != null && v !== "" && !muvofiqlik.has(v)) xatolar.push({ k: "x.nomalumMuvofiqlik", p: { v } });
   }
-  if (data.kompozitsiya && !kodlar("kompozitsiya").has(data.kompozitsiya)) {
+  if (data.kompozitsiya && !(await kodlar("kompozitsiya")).has(data.kompozitsiya)) {
     xatolar.push({ k: "x.nomalumKompozitsiya", p: { v: data.kompozitsiya } });
   }
   const auditoriya = data.auditoriya == null || data.auditoriya === ("" as unknown) ? null : Number(data.auditoriya);
@@ -242,7 +242,7 @@ export function tahlilniTekshirish(data: TahlilSaqlash): {
     xatolar.push({ k: "x.auditoriya15" });
   }
 
-  const katKodlari = new Set(all<{ kod: string }>("SELECT kod FROM kategoriyalar").map((r) => r.kod));
+  const katKodlari = new Set((await all<{ kod: string }>("SELECT kod FROM kategoriyalar")).map((r) => r.kod));
   const qismlar: Qism[] = ["sarlavha", "lid", "matn"];
   const belgilar: Belgi[] = (data.belgilar ?? []).map((b) => {
     if (!katKodlari.has(b.kategoriya)) xatolar.push({ k: "x.nomalumKategoriya", p: { v: b.kategoriya } });
@@ -266,10 +266,10 @@ export function tahlilniTekshirish(data: TahlilSaqlash): {
   };
 }
 
-export function tahlilOlish(materialId: number) {
-  const material = materialOlish(materialId);
-  const row = one<Tahlil & { sarlavha_turlari: string }>("SELECT * FROM tahlillar WHERE material_id = ?", [materialId]);
-  const belgilar = all<Belgi>(
+export async function tahlilOlish(materialId: number) {
+  const material = await materialOlish(materialId);
+  const row = await one<Tahlil & { sarlavha_turlari: string }>("SELECT * FROM tahlillar WHERE material_id = ?", [materialId]);
+  const belgilar = await all<Belgi>(
     "SELECT id, kategoriya, qism, fragment, izoh FROM belgilar WHERE material_id = ? ORDER BY id",
     [materialId],
   );
@@ -277,16 +277,16 @@ export function tahlilOlish(materialId: number) {
   let natija: Natija | null = null;
   if (row) {
     tahlil = { ...row, sarlavha_turlari: JSON.parse(row.sarlavha_turlari || "[]") };
-    natija = hisoblash(tahlil, belgilar, metodikaniYuklash());
+    natija = hisoblash(tahlil, belgilar, await metodikaniYuklash());
   }
   return { material, tahlil, belgilar, natija };
 }
 
-export function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Natija {
-  materialOlish(materialId);
-  const { tahlil, belgilar } = tahlilniTekshirish(data);
-  return transaction(() => {
-    run(
+export async function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Promise<Natija> {
+  await materialOlish(materialId);
+  const { tahlil, belgilar } = await tahlilniTekshirish(data);
+  return await transaction(async () => {
+    await run(
       `INSERT INTO tahlillar (material_id, sarlavha_turlari, kompozitsiya, sar_lid, lid_matn, sar_matn,
                               auditoriya, izoh, yangilangan)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -306,9 +306,9 @@ export function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Natija {
         hozir(),
       ],
     );
-    run("DELETE FROM belgilar WHERE material_id = ?", [materialId]);
+    await run("DELETE FROM belgilar WHERE material_id = ?", [materialId]);
     for (const b of belgilar) {
-      run("INSERT INTO belgilar (material_id, kategoriya, qism, fragment, izoh) VALUES (?, ?, ?, ?, ?)", [
+      await run("INSERT INTO belgilar (material_id, kategoriya, qism, fragment, izoh) VALUES (?, ?, ?, ?, ?)", [
         materialId,
         b.kategoriya,
         b.qism,
@@ -316,14 +316,14 @@ export function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Natija {
         b.izoh,
       ]);
     }
-    eskiTanlovlarniTozalash(materialId);
-    return tahlilNatijasiniYangilash(materialId, metodikaniYuklash())!;
+    await eskiTanlovlarniTozalash(materialId);
+    return (await tahlilNatijasiniYangilash(materialId, await metodikaniYuklash()))!;
   });
 }
 
 /** Belgilar qayta yozilgach, endi mavjud bo‘lmagan fragmentlarning ★ tanlovlari o‘chiriladi. */
-function eskiTanlovlarniTozalash(materialId: number) {
-  run(
+async function eskiTanlovlarniTozalash(materialId: number) {
+  await run(
     `DELETE FROM tanlangan_misollar
      WHERE material_id = ?
        AND NOT EXISTS (
@@ -334,52 +334,52 @@ function eskiTanlovlarniTozalash(materialId: number) {
   );
 }
 
-export function tahlilOchirish(materialId: number) {
-  materialOlish(materialId);
-  transaction(() => {
-    run("DELETE FROM belgilar WHERE material_id = ?", [materialId]);
-    run("DELETE FROM tahlillar WHERE material_id = ?", [materialId]);
-    run("DELETE FROM tanlangan_misollar WHERE material_id = ?", [materialId]);
+export async function tahlilOchirish(materialId: number) {
+  await materialOlish(materialId);
+  await transaction(async () => {
+    await run("DELETE FROM belgilar WHERE material_id = ?", [materialId]);
+    await run("DELETE FROM tahlillar WHERE material_id = ?", [materialId]);
+    await run("DELETE FROM tanlangan_misollar WHERE material_id = ?", [materialId]);
   });
   return { ok: true };
 }
 
-export function oldindanHisoblash(data: TahlilSaqlash): Natija {
-  const { tahlil, belgilar } = tahlilniTekshirish(data);
-  return hisoblash(tahlil, belgilar, metodikaniYuklash());
+export async function oldindanHisoblash(data: TahlilSaqlash): Promise<Natija> {
+  const { tahlil, belgilar } = await tahlilniTekshirish(data);
+  return hisoblash(tahlil, belgilar, await metodikaniYuklash());
 }
 
 // ------------------------------------------------------------------ metodika
 
-export function janrlar(): string[] {
-  const lugatJanr = all<{ nomi: string }>("SELECT nomi FROM lugat WHERE turkum = 'janr' ORDER BY tartib");
-  const mavjud = all<{ janr: string }>("SELECT DISTINCT janr FROM materiallar WHERE janr IS NOT NULL AND janr <> ''");
+export async function janrlar(): Promise<string[]> {
+  const lugatJanr = await all<{ nomi: string }>("SELECT nomi FROM lugat WHERE turkum = 'janr' ORDER BY tartib");
+  const mavjud = await all<{ janr: string }>("SELECT DISTINCT janr FROM materiallar WHERE janr IS NOT NULL AND janr <> ''");
   return [...new Set([...lugatJanr.map((j) => j.nomi), ...mavjud.map((m) => m.janr)])].sort();
 }
 
-export function metodikaTolik(): MetodikaTolik {
-  const m = metodikaniYuklash();
+export async function metodikaTolik(): Promise<MetodikaTolik> {
+  const m = await metodikaniYuklash();
   const lugat: Record<string, { kod: string; nomi: string; qiymat: number | null }[]> = {};
-  for (const r of all<{ turkum: string; kod: string; nomi: string; qiymat: number | null }>(
+  for (const r of await all<{ turkum: string; kod: string; nomi: string; qiymat: number | null }>(
     "SELECT turkum, kod, nomi, qiymat FROM lugat ORDER BY turkum, tartib",
   )) {
     (lugat[r.turkum] ??= []).push({ kod: r.kod, nomi: r.nomi, qiymat: r.qiymat });
   }
   return {
     versiya: m.versiya,
-    mezonlar: all<Mezon>("SELECT * FROM mezonlar ORDER BY kod"),
-    kategoriyalar: all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib"),
+    mezonlar: await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod"),
+    kategoriyalar: await all<Kategoriya>("SELECT * FROM kategoriyalar ORDER BY tartib"),
     lugat,
     shkala: m.shkala,
-    janrlar: janrlar(),
-    tahlillar_soni: all<{ n: number }>("SELECT COUNT(*) AS n FROM tahlillar")[0]?.n ?? 0,
+    janrlar: await janrlar(),
+    tahlillar_soni: (await one<{ n: number }>("SELECT COUNT(*) AS n FROM tahlillar"))?.n ?? 0,
   };
 }
 
-export function metodikaTarixi(): MetodikaTarix[] {
-  return all<{ versiya: number; sana: string; izoh: string | null; snapshot: string }>(
+export async function metodikaTarixi(): Promise<MetodikaTarix[]> {
+  return (await all<{ versiya: number; sana: string; izoh: string | null; snapshot: string }>(
     "SELECT * FROM metodika_tarixi ORDER BY versiya DESC",
-  ).map((r) => ({ ...r, snapshot: JSON.parse(r.snapshot) as Partial<Metodika> }));
+  )).map((r) => ({ ...r, snapshot: JSON.parse(r.snapshot) as Partial<Metodika> }));
 }
 
 export interface MetodikaKirish {
@@ -391,8 +391,8 @@ export interface MetodikaKirish {
   izoh?: string | null;
 }
 
-export function metodikaSaqlash(data: MetodikaKirish) {
-  const joriy = metodikaniYuklash();
+export async function metodikaSaqlash(data: MetodikaKirish) {
+  const joriy = await metodikaniYuklash();
   const xatolar: Xabar[] = [];
   const sonlar = (o: Record<string, number>) => Object.values(o).map(Number);
 
@@ -440,33 +440,33 @@ export function metodikaSaqlash(data: MetodikaKirish) {
 
   if (xatolar.length) throw new ApiError(422, yagona(xatolar));
 
-  return transaction(() => {
+  return await transaction(async () => {
     for (const [kod, vazn] of Object.entries(data.vaznlar)) {
-      run("UPDATE mezonlar SET vazn = ? WHERE kod = ?", [Number(vazn), kod]);
+      await run("UPDATE mezonlar SET vazn = ? WHERE kod = ?", [Number(vazn), kod]);
     }
     for (const [kod, qiymat] of Object.entries(data.muvofiqlik)) {
-      run("UPDATE lugat SET qiymat = ? WHERE turkum = 'muvofiqlik' AND kod = ?", [Number(qiymat), kod]);
+      await run("UPDATE lugat SET qiymat = ? WHERE turkum = 'muvofiqlik' AND kod = ?", [Number(qiymat), kod]);
     }
     for (const [kod, qiymat] of Object.entries(data.kompozitsiya)) {
-      run("UPDATE lugat SET qiymat = ? WHERE turkum = 'kompozitsiya' AND kod = ?", [Number(qiymat), kod]);
+      await run("UPDATE lugat SET qiymat = ? WHERE turkum = 'kompozitsiya' AND kod = ?", [Number(qiymat), kod]);
     }
     for (const [kod, sozlama] of Object.entries(data.kategoriyalar)) {
-      run("UPDATE kategoriyalar SET mezon = ?, jarima = ? WHERE kod = ?", [
+      await run("UPDATE kategoriyalar SET mezon = ?, jarima = ? WHERE kod = ?", [
         sozlama.mezon || null,
         Number(sozlama.jarima),
         kod,
       ]);
     }
     const yangi = joriy.versiya + 1;
-    run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'metodika_versiya'", [String(yangi)]);
-    run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'shkala'", [JSON.stringify(shkala)]);
-    const m = metodikaniYuklash();
-    run("INSERT INTO metodika_tarixi (versiya, sana, izoh, snapshot) VALUES (?, ?, ?, ?)", [
+    await run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'metodika_versiya'", [String(yangi)]);
+    await run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'shkala'", [JSON.stringify(shkala)]);
+    const m = await metodikaniYuklash();
+    await run("INSERT INTO metodika_tarixi (versiya, sana, izoh, snapshot) VALUES (?, ?, ?, ?)", [
       yangi,
       hozir(),
       matn(data.izoh),
       JSON.stringify(m),
     ]);
-    return { versiya: yangi, qayta_hisoblangan: hammasiniQaytaHisoblash(m) };
+    return { versiya: yangi, qayta_hisoblangan: await hammasiniQaytaHisoblash(m) };
   });
 }

@@ -7,16 +7,16 @@
  * Kuchli/zaif tomonlar shaffof qoida bilan aniqlanadi (sun’iy intellekt emas): ko‘rsatkichda ±CHEGARA_BALL,
  * muammo ulushida ±CHEGARA_FP; statistik ahamiyat alohida ko‘rsatiladi.
  */
-import { all, one } from "./db";
-import { kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics";
-import { KORSATKICHLAR, type Korsatkich } from "./davrlar";
-import type { Misol } from "./misollar";
-import { misollarKorpusi } from "./misollarBaza";
-import { ApiError } from "./queries";
-import { nashrReytingi } from "./reyting";
-import { daraja, metodikaniYuklash } from "./scoring";
-import { fisherAniq, holm, mannWhitney, rEffekti, type EffektKuchi, type MannWhitneyNatija } from "./statistika";
-import type { MediaTuri, Qism, ShkalaOraliq } from "./types";
+import { all, one } from "./db.ts";
+import { kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics.ts";
+import { KORSATKICHLAR, type Korsatkich } from "./davrlar.ts";
+import type { Misol } from "./misollar.ts";
+import { misollarKorpusi } from "./misollarBaza.ts";
+import { ApiError } from "./queries.ts";
+import { nashrReytingi } from "./reyting.ts";
+import { daraja, metodikaniYuklash } from "./scoring.ts";
+import { fisherAniq, holm, mannWhitney, rEffekti, type EffektKuchi, type MannWhitneyNatija } from "./statistika.ts";
+import type { MediaTuri, Qism, ShkalaOraliq } from "./types.ts";
 
 export const ALFA = 0.05;
 /** Ko‘rsatkich o‘rtachadan shuncha ball farq qilsa — kuchli yoki zaif tomon */
@@ -113,13 +113,13 @@ function davrKaliti(sana: string, g: "oy" | "chorak" | "yil") {
   return sana.slice(0, 7);
 }
 
-export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: string } = {}): NashrHisoboti {
-  const nashr = one<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar WHERE id = ?", [nashrId]);
+export async function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: string } = {}): Promise<NashrHisoboti> {
+  const nashr = await one<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar WHERE id = ?", [nashrId]);
   if (!nashr) throw new ApiError(404, "x.nashrTopilmadi");
   const d = { dan: davr.dan ?? null, gacha: davr.gacha ?? null };
-  const m = metodikaniYuklash();
+  const m = await metodikaniYuklash();
 
-  const davrdagi = materialQatorlari().filter((q) => sanaFiltri(q.sana, d));
+  const davrdagi = (await materialQatorlari()).filter((q) => sanaFiltri(q.sana, d));
   const korpus = davrdagi.filter((q) => q.lpsi != null);
   const oz = korpus.filter((q) => q.nashr_id === nashrId);
   const qolgan = korpus.filter((q) => q.nashr_id !== nashrId);
@@ -182,7 +182,7 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
     });
 
   // --------------------------------------------------------------- kuchli va zaif tomonlar
-  const mezonNomi = Object.fromEntries(all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar").map((x) => [x.kod, x.nomi]));
+  const mezonNomi = Object.fromEntries((await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM mezonlar")).map((x) => [x.kod, x.nomi]));
   const kuchli: Xulosa[] = [];
   const zaif: Xulosa[] = [];
   for (const q of korsatkichlar) {
@@ -222,11 +222,11 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
   zaif.sort(tartib);
 
   // --------------------------------------------------------------- matn qismlari
-  const qismSanoq = all<{ material_id: number; qism: Qism; soni: number }>(
+  const qismSanoq = (await all<{ material_id: number; qism: Qism; soni: number }>(
     `SELECT b.material_id, b.qism, COUNT(*) AS soni
      FROM belgilar b JOIN kategoriyalar k ON k.kod = b.kategoriya
      WHERE k.guruh = 'muammo' GROUP BY b.material_id, b.qism`,
-  ).filter((r) => korpusIdlar.has(r.material_id));
+  )).filter((r) => korpusIdlar.has(r.material_id));
   const qismFoiz = (rows: typeof qismSanoq) => {
     const jami = rows.reduce((s, r) => s + r.soni, 0);
     const q = (qism: Qism) => foiz(rows.filter((r) => r.qism === qism).reduce((s, r) => s + r.soni, 0), jami);
@@ -236,9 +236,9 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
   const qk = qismFoiz(qismSanoq);
 
   // --------------------------------------------------------------- muvofiqlik
-  const muvQatorlari = all<{ material_id: number; sar_lid: string | null; lid_matn: string | null; sar_matn: string | null }>(
+  const muvQatorlari = (await all<{ material_id: number; sar_lid: string | null; lid_matn: string | null; sar_matn: string | null }>(
     "SELECT material_id, sar_lid, lid_matn, sar_matn FROM tahlillar WHERE lpsi IS NOT NULL",
-  ).filter((r) => korpusIdlar.has(r.material_id));
+  )).filter((r) => korpusIdlar.has(r.material_id));
   const taqsimot = (rows: typeof muvQatorlari, k: "sar_lid" | "lid_matn" | "sar_matn") => {
     const bor = rows.filter((r) => r[k]);
     return {
@@ -254,7 +254,7 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
   }));
 
   // --------------------------------------------------------------- sarlavha turlari
-  const turlar = all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM lugat WHERE turkum = 'sarlavha_turi' ORDER BY tartib");
+  const turlar = await all<{ kod: string; nomi: string }>("SELECT kod, nomi FROM lugat WHERE turkum = 'sarlavha_turi' ORDER BY tartib");
   const sarlavhaTurlari = turlar
     .map((tur) => ({
       kod: tur.kod,
@@ -280,7 +280,7 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
   } as NashrHisoboti["dinamika"];
 
   // --------------------------------------------------------------- tipik misollar (korpusdan)
-  const misollar = misollarKorpusi()
+  const misollar = (await misollarKorpusi())
     .misollar.filter((x) => x.nashr_id === nashrId && x.guruh === "muammo" && idlar.has(x.material_id))
     .sort(
       (a, b) =>
@@ -332,8 +332,8 @@ export function nashrHisoboti(nashrId: number, davr: { dan?: string; gacha?: str
 }
 
 /** Hisobot uchun nashrlar ro‘yxati: davrdagi to‘liq tahlil qilingan materiallar soni bilan. */
-export function hisobotNashrlari(): { id: number; nomi: string; turi: MediaTuri; toliq: number }[] {
-  return all<{ id: number; nomi: string; turi: MediaTuri; toliq: number }>(
+export async function hisobotNashrlari(): Promise<{ id: number; nomi: string; turi: MediaTuri; toliq: number }[]> {
+  return await all<{ id: number; nomi: string; turi: MediaTuri; toliq: number }>(
     `SELECT n.id, n.nomi, n.turi, COUNT(t.material_id) AS toliq
      FROM nashrlar n
      LEFT JOIN materiallar m ON m.nashr_id = n.id

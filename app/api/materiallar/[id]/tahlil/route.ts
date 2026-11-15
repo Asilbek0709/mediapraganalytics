@@ -7,16 +7,16 @@ export const dynamic = "force-dynamic";
 
 export const GET = async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
-  return handle(() => tahlilOlish(raqam(id)));
+  return handle(() => tahlilOlish(raqam(id)), 200, ["admin"]);
 };
 
 export const PUT = async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   const body = await req.json();
-  return handle(() => tahlilSaqlash(raqam(id), body));
+  return handle(() => tahlilSaqlash(raqam(id), body), 200, ["admin"]);
 };
 
 export const DELETE = async (_req: Request, { params }: Ctx) => {
   const { id } = await params;
-  return handle(() => tahlilOchirish(raqam(id)));
+  return handle(() => tahlilOchirish(raqam(id)), 200, ["admin"]);
 };

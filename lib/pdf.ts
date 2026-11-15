@@ -1,19 +1,19 @@
 /** «Tahlil kartasi» — bitta material bo‘yicha PDF hujjat (foydalanuvchi tilida). */
-import { all, hozir } from "./db";
-import { darajaIndeks, idRaqami, sana } from "./format";
-import { tarjimon } from "./i18n";
-import type { Til } from "./i18n/til";
-import { tahlilOlish } from "./queries";
-import { CHAP, KENGLIK, RANG, yangiHujjat } from "./pdfAsos";
-import { metodikaniYuklash } from "./scoring";
-import type { Belgi, Mezon } from "./types";
+import { all, hozir } from "./db.ts";
+import { darajaIndeks, idRaqami, sana } from "./format.ts";
+import { tarjimon } from "./i18n/index.ts";
+import type { Til } from "./i18n/til.ts";
+import { tahlilOlish } from "./queries.ts";
+import { CHAP, KENGLIK, RANG, yangiHujjat } from "./pdfAsos.ts";
+import { metodikaniYuklash } from "./scoring.ts";
+import type { Belgi, Mezon } from "./types.ts";
 
 export async function tahlilKartasiPdf(materialId: number, til: Til): Promise<Buffer> {
   const tr = tarjimon(til);
   const { t, son, atama } = tr;
-  const { material, tahlil, belgilar, natija } = tahlilOlish(materialId);
-  const m = metodikaniYuklash();
-  const mezonlar = all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
+  const { material, tahlil, belgilar, natija } = await tahlilOlish(materialId);
+  const m = await metodikaniYuklash();
+  const mezonlar = await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
 
   const { doc, joy, lenta, bolim, kalitQiymat, yakunlash } = yangiHujjat(t("pdf.sarlavha", { id: idRaqami(material.id) }));
 

@@ -4,10 +4,10 @@
  * Statistikaga faqat to‘liq tahlil qilingan (LPSI hisoblangan) materiallar kiradi.
  * «Muammo ulushi» — kategoriya kamida bir marta uchragan materiallar foizi.
  */
-import { all } from "./db";
-import { JANR_YOQ } from "./format";
-import { daraja, metodikaniYuklash } from "./scoring";
-import type { Dashboard, Kesim, MediaTuri, Metodika, Mezon, MuammoChastota, Qism } from "./types";
+import { all, one } from "./db.ts";
+import { JANR_YOQ } from "./format.ts";
+import { daraja, metodikaniYuklash } from "./scoring.ts";
+import type { Dashboard, Kesim, MediaTuri, Metodika, Mezon, MuammoChastota, Qism } from "./types.ts";
 
 export { JANR_YOQ };
 const K_USTUNLAR = ["k1", "k2", "k3", "k4", "k5", "lpsi"] as const;
@@ -33,8 +33,8 @@ export interface MaterialQator {
   sanoq: Record<string, number>;
 }
 
-export function materialQatorlari(): MaterialQator[] {
-  const rows = all<Omit<MaterialQator, "sanoq" | "sarlavha_turlari"> & { sarlavha_turlari: string | null }>(
+export async function materialQatorlari(): Promise<MaterialQator[]> {
+  const rows = await all<Omit<MaterialQator, "sanoq" | "sarlavha_turlari"> & { sarlavha_turlari: string | null }>(
     `SELECT m.id, m.nashr_id, n.nomi AS nashr, n.turi AS media_turi, m.sana, m.janr, m.sarlavha,
             t.material_id IS NOT NULL AS tahlil_bor, t.sarlavha_turlari,
             t.k1, t.k2, t.k3, t.k4, t.k5, t.lpsi, t.daraja, t.yangilangan AS tahlil_sanasi
@@ -43,7 +43,7 @@ export function materialQatorlari(): MaterialQator[] {
      LEFT JOIN tahlillar t ON t.material_id = m.id
      ORDER BY m.id`,
   );
-  const belgilar = all<{ material_id: number; kategoriya: string; soni: number }>(
+  const belgilar = await all<{ material_id: number; kategoriya: string; soni: number }>(
     "SELECT material_id, kategoriya, COUNT(*) AS soni FROM belgilar GROUP BY material_id, kategoriya",
   );
   const sanoqlar = new Map<number, Record<string, number>>();
@@ -104,9 +104,9 @@ export function kesim(
     .sort((a, b) => (b.lpsi ?? 0) - (a.lpsi ?? 0));
 }
 
-export function muammolarChastotasi(qatorlar: MaterialQator[], m: Metodika): MuammoChastota[] {
+export async function muammolarChastotasi(qatorlar: MaterialQator[], m: Metodika): Promise<MuammoChastota[]> {
   const t = qatorlar.filter((q) => q.lpsi != null);
-  const qismlar = all<{ kategoriya: string; qism: Qism; soni: number }>(
+  const qismlar = await all<{ kategoriya: string; qism: Qism; soni: number }>(
     `SELECT b.kategoriya, b.qism, COUNT(*) AS soni
      FROM belgilar b JOIN tahlillar t ON t.material_id = b.material_id
      WHERE t.lpsi IS NOT NULL
@@ -133,13 +133,13 @@ export function muammolarChastotasi(qatorlar: MaterialQator[], m: Metodika): Mua
   });
 }
 
-export function dashboard(): Dashboard {
-  const m = metodikaniYuklash();
-  const qatorlar = materialQatorlari();
+export async function dashboard(): Promise<Dashboard> {
+  const m = await metodikaniYuklash();
+  const qatorlar = await materialQatorlari();
   const t = qatorlar.filter((q) => q.lpsi != null);
   const ortachaLpsi = ortacha(t.map((q) => q.lpsi));
-  const mezonlar = all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
-  const nashrlarSoni = all<{ n: number }>("SELECT COUNT(*) AS n FROM nashrlar")[0]?.n ?? 0;
+  const mezonlar = await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
+  const nashrlarSoni = (await one<{ n: number }>("SELECT COUNT(*) AS n FROM nashrlar"))?.n ?? 0;
 
   let quyi = 0;
   const taqsimot = m.shkala.map((s) => {
@@ -160,7 +160,7 @@ export function dashboard(): Dashboard {
     nashrlar: kesim(qatorlar, m, (q) => q.nashr),
     media_turlari: kesim(qatorlar, m, (q) => q.media_turi),
     janrlar: kesim(qatorlar, m, (q) => q.janr ?? JANR_YOQ),
-    muammolar: muammolarChastotasi(qatorlar, m),
+    muammolar: await muammolarChastotasi(qatorlar, m),
     oxirgi: [...t]
       .sort((a, b) => (b.tahlil_sanasi ?? "").localeCompare(a.tahlil_sanasi ?? ""))
       .slice(0, 6)

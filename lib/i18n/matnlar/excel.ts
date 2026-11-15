@@ -1,4 +1,4 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** Excel hisobot va PDF karta matnlari. */
 export const excelMatnlari = lugat(

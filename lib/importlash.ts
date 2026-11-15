@@ -7,7 +7,7 @@
  */
 import ExcelJS from "exceljs";
 
-import { all, hozir, run, transaction } from "./db";
+import { all, hozir, one, run, transaction } from "./db.ts";
 import {
   MAYDONLAR,
   csvTahlil,
@@ -19,11 +19,11 @@ import {
   turTaxmini,
   ustunlarniAniqlash,
   type Maydon,
-} from "./importParse";
-import { tarjimon, type Xabar } from "./i18n";
-import type { Til } from "./i18n/til";
-import { ApiError } from "./queries";
-import type { MediaTuri } from "./types";
+} from "./importParse.ts";
+import { tarjimon, type Xabar } from "./i18n/index.ts";
+import type { Til } from "./i18n/til.ts";
+import { ApiError } from "./queries.ts";
+import type { MediaTuri } from "./types.ts";
 
 export const MAKS_QATOR = 5000;
 export const MAKS_HAJM = 15 * 1024 * 1024;
@@ -132,17 +132,17 @@ function csvOqish(buf: Buffer) {
 
 // ------------------------------------------------------------------ tekshirish
 
-function nashrXaritasi() {
+async function nashrXaritasi() {
   return new Map(
-    all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar").map((n) => [nashrKaliti(n.nomi), n]),
+    (await all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar")).map((n) => [nashrKaliti(n.nomi), n]),
   );
 }
 
-function bazadagiKalitlar(): Set<string> {
+async function bazadagiKalitlar(): Promise<Set<string>> {
   return new Set(
-    all<{ nashr: string; sarlavha: string }>(
+    (await all<{ nashr: string; sarlavha: string }>(
       "SELECT n.nomi AS nashr, m.sarlavha FROM materiallar m JOIN nashrlar n ON n.id = m.nashr_id",
-    ).map((r) => `${nashrKaliti(r.nashr)}|${sarlavhaKaliti(r.sarlavha)}`),
+    )).map((r) => `${nashrKaliti(r.nashr)}|${sarlavhaKaliti(r.sarlavha)}`),
   );
 }
 
@@ -152,9 +152,9 @@ const satr = (v: unknown): string | null => {
   return s || null;
 };
 
-function qatorlarniTekshirish(xom: XomQator[]): { qatorlar: ImportQatori[]; yangiNashrlar: KoribChiqish["yangiNashrlar"] } {
-  const nashrlar = nashrXaritasi();
-  const bazada = bazadagiKalitlar();
+async function qatorlarniTekshirish(xom: XomQator[]): Promise<{ qatorlar: ImportQatori[]; yangiNashrlar: KoribChiqish["yangiNashrlar"] }> {
+  const nashrlar = await nashrXaritasi();
+  const bazada = await bazadagiKalitlar();
   const faylda = new Set<string>();
   const yangi = new Map<string, { nomi: string; turi: MediaTuri; qatorlar: number }>();
   const qatorlar: ImportQatori[] = [];
@@ -256,7 +256,7 @@ export async function koribChiqish(buf: Buffer, faylNomi: string): Promise<Korib
     throw new ApiError(422, "x.nashrUstuniYoq");
   }
 
-  const { qatorlar, yangiNashrlar } = qatorlarniTekshirish(oqilgan.qatorlar);
+  const { qatorlar, yangiNashrlar } = await qatorlarniTekshirish(oqilgan.qatorlar);
   return {
     fayl: faylNomi,
     varaq: oqilgan.varaq,
@@ -287,13 +287,13 @@ export interface ImportNatijasi {
   oxirgi_id: number | null;
 }
 
-export function importQilish(sorov: ImportSorovi): ImportNatijasi {
+export async function importQilish(sorov: ImportSorovi): Promise<ImportNatijasi> {
   const kirish = Array.isArray(sorov?.qatorlar) ? sorov.qatorlar : [];
   if (!kirish.length) throw new ApiError(422, "x.importQatorYoq");
   if (kirish.length > MAKS_QATOR) throw new ApiError(422, "x.birMartada", { maks: MAKS_QATOR });
 
   // Mijozdan kelgan ma’lumot qayta tekshiriladi — ko‘rib chiqish natijasiga ishonilmaydi
-  const { qatorlar } = qatorlarniTekshirish(
+  const { qatorlar } = await qatorlarniTekshirish(
     kirish.map((q, i) => ({
       qator: Number((q as { qator?: number }).qator) || i + 2,
       qiymatlar: Object.fromEntries(MAYDONLAR.map((m) => [m, (q as Record<string, unknown>)[m] ?? null])),
@@ -316,7 +316,7 @@ export function importQilish(sorov: ImportSorovi): ImportNatijasi {
     oxirgi_id: null,
   };
 
-  transaction(() => {
+  await transaction(async () => {
     const yaratilgan = new Map<string, number>();
     const vaqt = hozir();
     for (const q of yoziladi) {
@@ -325,18 +325,18 @@ export function importQilish(sorov: ImportSorovi): ImportNatijasi {
         const k = nashrKaliti(q.nashr);
         if (!yaratilgan.has(k)) {
           const turi = turlar.get(k) ?? q.turi ?? turTaxmini(q.nashr);
-          const r = run("INSERT INTO nashrlar (nomi, turi) VALUES (?, ?)", [q.nashr.trim(), turi]);
-          yaratilgan.set(k, Number(r.lastInsertRowid));
+          const r = await one<{ id: number }>("INSERT INTO nashrlar (nomi, turi) VALUES (?, ?) RETURNING id", [q.nashr.trim(), turi]);
+          yaratilgan.set(k, r!.id);
           natija.yangi_nashrlar.push(q.nashr.trim());
         }
         nashrId = yaratilgan.get(k)!;
       }
-      const r = run(
+      const r = await one<{ id: number }>(
         `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
         [nashrId, q.sana, q.janr, q.mavzu, q.havola, q.sarlavha, q.lid, q.matn, vaqt, vaqt],
       );
-      const id = Number(r.lastInsertRowid);
+      const id = r!.id;
       natija.birinchi_id ??= id;
       natija.oxirgi_id = id;
       natija.qoshildi++;
@@ -349,8 +349,8 @@ export function importQilish(sorov: ImportSorovi): ImportNatijasi {
 
 export async function shablon(til: Til): Promise<{ buf: Buffer; fayl: string }> {
   const { t, mediaQ } = tarjimon(til);
-  const nashrlar = all<{ nomi: string; turi: string }>("SELECT nomi, turi FROM nashrlar ORDER BY turi, nomi");
-  const janrlar = all<{ nomi: string }>("SELECT nomi FROM lugat WHERE turkum = 'janr' ORDER BY tartib").map((j) => j.nomi);
+  const nashrlar = await all<{ nomi: string; turi: string }>("SELECT nomi, turi FROM nashrlar ORDER BY turi, nomi");
+  const janrlar = (await all<{ nomi: string }>("SELECT nomi FROM lugat WHERE turkum = 'janr' ORDER BY tartib")).map((j) => j.nomi);
   const wb = new ExcelJS.Workbook();
   wb.creator = "MediaPrag-Analytics";
 

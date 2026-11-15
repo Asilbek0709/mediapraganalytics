@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -313,6 +314,7 @@ export function MisollarView({ korpus, boshFiltr }: { korpus: Korpus; boshFiltr:
 /** Bitta misol: kategoriya, gap ichida ajratilgan fragment, manba, ekspertlar tasdig‘i va ★. */
 function MisolKarta({ m, onTanlash }: { m: Misol; onTanlash: () => void }) {
   const { t, atama, media } = useTil();
+  const { admin } = useFoydalanuvchi();
   const k = m.kontekst;
   const vosita = m.guruh === "vosita";
   return (
@@ -332,15 +334,23 @@ function MisolKarta({ m, onTanlash }: { m: Misol; onTanlash: () => void }) {
             {t("ms.tasdiq", { a: m.tasdiq, b: m.ekspertlar })}
           </span>
         )}
-        <button
-          className="btn btn-sm"
-          aria-pressed={m.tanlangan}
-          onClick={onTanlash}
-          title={m.tanlangan ? t("ms.tanlanganTitle") : t("ms.tanlashTitle")}
-          style={m.tanlangan ? { background: "var(--brand)", borderColor: "var(--brand)", color: "var(--brand-ink)" } : undefined}
-        >
-          {m.tanlangan ? "★" : "☆"} {m.tanlangan ? t("ms.tanlangan") : t("ms.tanlash")}
-        </button>
+        {admin ? (
+          <button
+            className="btn btn-sm"
+            aria-pressed={m.tanlangan}
+            onClick={onTanlash}
+            title={m.tanlangan ? t("ms.tanlanganTitle") : t("ms.tanlashTitle")}
+            style={m.tanlangan ? { background: "var(--brand-grad)", borderColor: "var(--brand)", color: "var(--brand-ink)" } : undefined}
+          >
+            {m.tanlangan ? "★" : "☆"} {m.tanlangan ? t("ms.tanlangan") : t("ms.tanlash")}
+          </button>
+        ) : (
+          m.tanlangan && (
+            <span className="tag" title={t("ms.tanlangan")}>
+              ★
+            </span>
+          )
+        )}
       </div>
 
       <p className="mt-3 text-[15px] leading-[1.7]" style={{ color: "var(--ink)" }}>
@@ -379,9 +389,11 @@ function MisolKarta({ m, onTanlash }: { m: Misol; onTanlash: () => void }) {
               ↗
             </a>
           )}
-          <Link className="btn btn-ghost btn-sm" href={`/tahlil/${m.material_id}`} title={t("ms.tahlilgaTitle")}>
-            {t("ms.tahlilga")} →
-          </Link>
+          {admin && (
+            <Link className="btn btn-ghost btn-sm" href={`/tahlil/${m.material_id}`} title={t("ms.tahlilgaTitle")}>
+              {t("ms.tahlilga")} →
+            </Link>
+          )}
         </span>
       </div>
     </article>

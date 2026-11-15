@@ -3,5 +3,5 @@ import { handle } from "@/lib/route";
 
 export const POST = async (req: Request) => {
   const body = await req.json();
-  return handle(() => importQilish(body), 201);
+  return handle(() => importQilish(body), 201, ["admin"]);
 };

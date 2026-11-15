@@ -4,12 +4,12 @@
  *
  * Barcha hisob-kitoblar faqat to‘liq tahlil qilingan materiallar bo‘yicha.
  */
-import { ahamiyatTestlari, type Ahamiyat } from "./ahamiyat";
-import { all } from "./db";
-import { JANR_YOQ, kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics";
-import type { AnalitikaMateriali } from "./davrlar";
-import { metodikaniYuklash } from "./scoring";
-import type { Kategoriya, Kesim, MediaTuri, Mezon, Qism, ShkalaOraliq } from "./types";
+import { ahamiyatTestlari, type Ahamiyat } from "./ahamiyat.ts";
+import { all } from "./db.ts";
+import { JANR_YOQ, kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics.ts";
+import type { AnalitikaMateriali } from "./davrlar.ts";
+import { metodikaniYuklash } from "./scoring.ts";
+import type { Kategoriya, Kesim, MediaTuri, Mezon, Qism, ShkalaOraliq } from "./types.ts";
 
 export interface AnalitikaFiltr {
   turi?: MediaTuri;
@@ -159,9 +159,9 @@ export function filtrniTekshirish(p: Record<string, string | string[] | undefine
   };
 }
 
-export function analitika(filtr: AnalitikaFiltr = {}): Analitika {
-  const m = metodikaniYuklash();
-  const hammasi = materialQatorlari();
+export async function analitika(filtr: AnalitikaFiltr = {}): Promise<Analitika> {
+  const m = await metodikaniYuklash();
+  const hammasi = await materialQatorlari();
 
   const mos = hammasi.filter((q) => {
     if (filtr.turi && q.media_turi !== filtr.turi) return false;
@@ -175,9 +175,9 @@ export function analitika(filtr: AnalitikaFiltr = {}): Analitika {
   const idlar = new Set(t.map((q) => q.id));
 
   const kategoriyalar = Object.values(m.kategoriyalar);
-  const belgilar = all<{ material_id: number; kategoriya: string; qism: Qism }>(
+  const belgilar = (await all<{ material_id: number; kategoriya: string; qism: Qism }>(
     "SELECT material_id, kategoriya, qism FROM belgilar",
-  ).filter((b) => idlar.has(b.material_id));
+  )).filter((b) => idlar.has(b.material_id));
 
   const qismlar: QismQatori[] = kategoriyalar.map((k) => {
     const oz = belgilar.filter((b) => b.kategoriya === k.kod);
@@ -193,7 +193,7 @@ export function analitika(filtr: AnalitikaFiltr = {}): Analitika {
     };
   });
 
-  const turNomlari = all<{ kod: string; nomi: string }>(
+  const turNomlari = await all<{ kod: string; nomi: string }>(
     "SELECT kod, nomi FROM lugat WHERE turkum = 'sarlavha_turi' ORDER BY tartib",
   );
   const ulush = (items: MaterialQator[], kod: string) =>
@@ -247,9 +247,9 @@ export function analitika(filtr: AnalitikaFiltr = {}): Analitika {
       sanoq: q.sanoq,
     })),
     shkala: m.shkala,
-    mezonlar: all<Mezon>("SELECT * FROM mezonlar ORDER BY kod"),
+    mezonlar: await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod"),
     tanlovlar: {
-      nashrlar: all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar ORDER BY turi, nomi"),
+      nashrlar: await all<{ id: number; nomi: string; turi: MediaTuri }>("SELECT id, nomi, turi FROM nashrlar ORDER BY turi, nomi"),
       janrlar: [...new Set(hammasi.map((q) => q.janr).filter((j): j is string => !!j))].sort(),
     },
   };

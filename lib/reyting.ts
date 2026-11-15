@@ -5,8 +5,8 @@
  * o‘tkazib yuboriladi (1, 2, 2, 4). Qiymatlar ekrandagidek 0,1 gacha yaxlitlanib solishtiriladi —
  * ekranda teng ko‘ringan nashrlar har xil o‘rinda turmaydi.
  */
-import type { AnalitikaMateriali, Korsatkich } from "./davrlar";
-import type { Kesim } from "./types";
+import type { AnalitikaMateriali, Korsatkich } from "./davrlar.ts";
+import type { Kesim } from "./types.ts";
 
 /** Reytingdagi o‘rin ishonchli bo‘lishi uchun nashrda kerakli eng kam material */
 export const MIN_REYTING = 3;

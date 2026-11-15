@@ -41,10 +41,22 @@ export function LpsiGauge({
           cy="98"
           r={RADIUS}
           fill="none"
-          stroke="var(--surface-2)"
+          stroke="color-mix(in oklab, var(--line) 70%, transparent)"
           strokeWidth={16}
           strokeLinecap="round"
           strokeDasharray={`${AYLANA * BOSHLANISH} ${AYLANA}`}
+        />
+        {/* yorug‘lik: shu yoyning xiralashtirilgan nusxasi */}
+        <motion.circle
+          cx="98"
+          cy="98"
+          r={RADIUS}
+          fill="none"
+          stroke={rang}
+          strokeWidth={16}
+          strokeLinecap="round"
+          strokeDasharray={`${AYLANA} ${AYLANA}`}
+          style={{ strokeDashoffset: dashoffset, filter: "blur(9px)", opacity: 0.55 }}
         />
         <motion.circle
           cx="98"
@@ -122,11 +134,11 @@ export function MezonBars({
             </div>
             <div
               className="mt-1.5 h-2.5 overflow-hidden rounded-full"
-              style={{ background: "var(--surface-2)", border: "1px solid var(--line)" }}
+              style={{ background: "color-mix(in oklab, var(--surface-2) 80%, transparent)", boxShadow: "inset 0 0 0 1px var(--line)" }}
             >
               <motion.div
                 className="h-full rounded-full"
-                style={{ background: "var(--s1)" }}
+                style={{ background: "var(--brand-grad)", boxShadow: "0 0 12px -2px rgba(124, 58, 237, 0.6)" }}
                 initial={{ width: 0 }}
                 animate={{ width: `${ball ?? 0}%` }}
                 transition={{ type: "spring", stiffness: 170, damping: 24, delay: 0.05 * i }}

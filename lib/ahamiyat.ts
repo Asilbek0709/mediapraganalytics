@@ -7,8 +7,8 @@
  * Faqat to‘liq tahlil qilingan materiallar. Nomlar (nashr, janr, kategoriya) bazadagidek qaytariladi —
  * tarjima mijozda.
  */
-import type { MaterialQator } from "./analytics";
-import { JANR_YOQ } from "./format";
+import type { MaterialQator } from "./analytics.ts";
+import { JANR_YOQ } from "./format.ts";
 import {
   dunn,
   epsilonEffekti,
@@ -21,8 +21,8 @@ import {
   type EffektKuchi,
   type KruskalNatija,
   type MannWhitneyNatija,
-} from "./statistika";
-import type { Metodika } from "./types";
+} from "./statistika.ts";
+import type { Metodika } from "./types.ts";
 
 export const ALFA = 0.05;
 /** Kruskal–Wallis’ga kiradigan guruhning eng kichik hajmi */

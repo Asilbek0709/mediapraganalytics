@@ -17,8 +17,8 @@ export function Tabs<T extends string>({
   return (
     <div
       role="tablist"
-      className="inline-flex flex-wrap gap-1 rounded-xl border p-1"
-      style={{ borderColor: "var(--line-strong)", background: "var(--surface-2)" }}
+      className="inline-flex flex-wrap gap-1 rounded-[14px] border p-1"
+      style={{ borderColor: "var(--line)", background: "color-mix(in oklab, var(--surface-2) 75%, transparent)" }}
     >
       {items.map((it) => {
         const faol = it.kalit === value;
@@ -28,14 +28,14 @@ export function Tabs<T extends string>({
             role="tab"
             aria-selected={faol}
             onClick={() => onChange(it.kalit)}
-            className="relative rounded-lg px-3 py-1.5 text-[12.5px] font-bold transition-colors"
-            style={{ color: faol ? "var(--brand-ink)" : "var(--ink-2)" }}
+            className="relative rounded-[10px] px-3 py-1.5 text-[12.5px] font-bold transition-colors hover:text-[var(--ink)]"
+            style={{ color: faol ? "#fff" : "var(--ink-2)" }}
           >
             {faol && (
               <motion.span
                 layoutId={layoutId}
-                className="absolute inset-0 -z-0 rounded-lg"
-                style={{ background: "var(--brand)" }}
+                className="absolute inset-0 -z-0 rounded-[10px]"
+                style={{ background: "var(--brand-grad)", boxShadow: "var(--glow)" }}
                 transition={{ type: "spring", stiffness: 420, damping: 34 }}
               />
             )}

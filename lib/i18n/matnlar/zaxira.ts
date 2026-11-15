@@ -1,10 +1,10 @@
-import { lugat } from "../til";
+import { lugat } from "../til.ts";
 
 /** Zaxira nusxalar kartasi (Hisobot sahifasi). */
 export const zaxiraMatnlari = lugat(
   {
     "zx.izoh":
-      "Butun baza — materiallar, tahlillar, belgilar, ekspertlar, ★ tanlovlar va metodika tarixi — bitta .db faylda. Nusxa platforma ishlab turganda ham to‘liq va izchil olinadi.",
+      "Butun baza — materiallar, tahlillar, belgilar, ekspertlar, ★ tanlovlar va metodika tarixi — bitta siqilgan faylda (.json.gz). Nusxa platforma ishlab turganda ham to‘liq va izchil olinadi; foydalanuvchi hisoblari nusxaga kirmaydi.",
     "zx.joriy": "Joriy baza",
     "zx.nMaterial": "{n} material",
     "zx.nTahlil": "{n} to‘liq tahlil",
@@ -33,7 +33,7 @@ export const zaxiraMatnlari = lugat(
     "zx.avtoIzoh":
       "Platforma ishlayotgan har kuni avtomatik nusxa olinadi (oxirgi {a} tasi saqlanadi), har bir tiklashdan oldin ham — joriy holat (oxirgi {b} tasi). Qo‘lda yaratilgan va fayldan qo‘shilgan nusxalar o‘z-o‘zidan o‘chirilmaydi.",
     "zx.papkaIzoh":
-      "Nusxalar shu kompyuterda, {v} papkasida turadi — disk buzilsa, ular ham yo‘qoladi. Muhim bosqichlardan keyin nusxani yuklab olib, fleshka yoki bulutga saqlang.",
+      "Nusxalar bazaning o‘zida saqlanadi: baza yoki xizmat ishdan chiqsa, ular ham yo‘qoladi. Muhim bosqichlardan keyin nusxani yuklab olib, fleshka yoki bulutga saqlang. Eski SQLite bazasini (.db) ham «Fayldan qo‘shish» orqali yuklash mumkin.",
     "zx.d.sarlavha": "Bazani tiklash",
     "zx.d.izoh":
       "Joriy ma’lumotlar tanlangan nusxadagi bilan to‘liq almashtiriladi. Undan oldin joriy holatning nusxasi avtomatik olinadi — kerak bo‘lsa, undan qaytarish mumkin.",
@@ -55,7 +55,7 @@ export const zaxiraMatnlari = lugat(
   },
   {
     "zx.izoh":
-      "Вся база — материалы, анализы, пометки, эксперты, избранное ★ и история методики — в одном файле .db. Копия снимается полностью и согласованно даже во время работы платформы.",
+      "Вся база — материалы, анализы, пометки, эксперты, избранное ★ и история методики — в одном сжатом файле (.json.gz). Копия снимается полностью и согласованно даже во время работы платформы; учётные записи пользователей в копию не входят.",
     "zx.joriy": "Текущая база",
     "zx.nMaterial": "{n} {материал|материала|материалов}",
     "zx.nTahlil": "{n} {завершённый анализ|завершённых анализа|завершённых анализов}",
@@ -84,7 +84,7 @@ export const zaxiraMatnlari = lugat(
     "zx.avtoIzoh":
       "Автоматическая копия создаётся каждый день, когда платформа работает (хранятся последние {a}), а также перед каждым восстановлением — текущее состояние (последние {b}). Копии, созданные вручную и добавленные из файла, сами не удаляются.",
     "zx.papkaIzoh":
-      "Копии лежат на этом компьютере, в папке {v}, — если диск выйдет из строя, пропадут и они. После важных этапов скачивайте копию и сохраняйте на флешку или в облако.",
+      "Копии хранятся в самой базе: если база или сервис выйдут из строя, пропадут и они. После важных этапов скачивайте копию и сохраняйте на флешку или в облако. Старую базу SQLite (.db) тоже можно загрузить через «Добавить из файла».",
     "zx.d.sarlavha": "Восстановление базы",
     "zx.d.izoh":
       "Текущие данные будут полностью заменены данными из выбранной копии. Перед этим автоматически сохраняется копия текущего состояния — при необходимости к нему можно вернуться.",
@@ -106,7 +106,7 @@ export const zaxiraMatnlari = lugat(
   },
   {
     "zx.izoh":
-      "The whole database — materials, analyses, marks, experts, stars ★ and methodology history — in a single .db file. The copy is complete and consistent even while the platform is running.",
+      "The whole database — materials, analyses, marks, experts, stars ★ and methodology history — in a single compressed file (.json.gz). The copy is complete and consistent even while the platform is running; user accounts are not included.",
     "zx.joriy": "Current database",
     "zx.nMaterial": "{n} {material|materials}",
     "zx.nTahlil": "{n} completed {analysis|analyses}",
@@ -135,7 +135,7 @@ export const zaxiraMatnlari = lugat(
     "zx.avtoIzoh":
       "An automatic backup is made every day the platform runs (the last {a} are kept), and before every restore — of the current state (the last {b}). Manual and uploaded backups are never deleted automatically.",
     "zx.papkaIzoh":
-      "Backups are stored on this computer, in the {v} folder — if the disk fails, they are lost too. After important milestones, download a backup and keep it on a USB drive or in the cloud.",
+      "Backups are stored in the database itself: if the database or the service fails, they are lost too. After important milestones, download a backup and keep it on a USB drive or in the cloud. An old SQLite database (.db) can also be loaded with “Add from file”.",
     "zx.d.sarlavha": "Restore database",
     "zx.d.izoh":
       "The current data will be completely replaced with the data from the selected backup. A backup of the current state is made automatically first, so you can return to it if needed.",

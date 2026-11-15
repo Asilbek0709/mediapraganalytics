@@ -5,6 +5,7 @@ import { idRaqami } from "@/lib/format";
 import { sahifaSarlavhasi } from "@/lib/i18n/server";
 import { materialKelishuvi } from "@/lib/kelishuv";
 import { metodikaniYuklash } from "@/lib/scoring";
+import { sahifaTalab } from "@/lib/sessiya";
 
 export const dynamic = "force-dynamic";
 
@@ -20,16 +21,17 @@ export default async function KelishuvSahifasi({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await sahifaTalab(["admin"]);
   const { id } = await params;
   const sp = await searchParams;
   const materialId = Number(id);
   if (!Number.isInteger(materialId) || materialId <= 0) notFound();
 
-  let k: ReturnType<typeof materialKelishuvi>;
+  let k: Awaited<ReturnType<typeof materialKelishuvi>>;
   try {
-    k = materialKelishuvi(materialId, sp.asosiy !== "0");
+    k = await materialKelishuvi(materialId, sp.asosiy !== "0");
   } catch {
     notFound();
   }
-  return <KelishuvView k={k} shkala={metodikaniYuklash().shkala} />;
+  return <KelishuvView k={k} shkala={(await metodikaniYuklash()).shkala} />;
 }

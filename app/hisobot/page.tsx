@@ -8,6 +8,7 @@ import type { Kalit } from "@/lib/i18n";
 import { sahifaSarlavhasi, serverTarjimon } from "@/lib/i18n/server";
 import { hisobotNashrlari } from "@/lib/nashrHisoboti";
 import { zaxiraHolati } from "@/lib/zaxira";
+import { sahifaTalab } from "@/lib/sessiya";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,10 @@ const VARAQLAR = [
 ] as const;
 
 export default async function HisobotSahifasi() {
+  const f = await sahifaTalab(["admin", "kuzatuvchi"]);
+  const admin = f.rol === "admin";
   const { t } = await serverTarjimon();
-  const d = dashboard();
+  const d = await dashboard();
 
   return (
     <div className="flex flex-col gap-5">
@@ -73,7 +76,7 @@ export default async function HisobotSahifasi() {
           <p className="hint mt-3">{t("hs.tilIzoh")}</p>
         </Card>
 
-        <NashrHisobotKarta nashrlar={hisobotNashrlari()} />
+        <NashrHisobotKarta nashrlar={await hisobotNashrlari()} />
 
         <Card>
           <CardHead
@@ -87,12 +90,14 @@ export default async function HisobotSahifasi() {
           />
         </Card>
 
-        <Card>
-          <CardHead title={t("hs.pdf")} />
-          <p>{t("hs.pdfIzoh")}</p>
-        </Card>
+        {admin && (
+          <Card>
+            <CardHead title={t("hs.pdf")} />
+            <p>{t("hs.pdfIzoh")}</p>
+          </Card>
+        )}
 
-        <ZaxiraKarta boshHolat={zaxiraHolati()} />
+        {admin && <ZaxiraKarta boshHolat={await zaxiraHolati()} />}
       </Stagger>
     </div>
   );

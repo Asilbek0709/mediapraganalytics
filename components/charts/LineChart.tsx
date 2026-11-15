@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useTil } from "@/components/i18n/TilProvider";
 
@@ -43,6 +43,8 @@ export function LineChart({
   const y = (v: number) => USTKI + grafikH - (v / max) * grafikH;
   const qadam = Math.max(1, Math.ceil(n / 12));
   const kalit = davrlar.map((d) => d.kalit).join("|");
+  const uid = useId().replace(/:/g, "");
+  const tag = USTKI + grafikH;
 
   function bolaklar(qiymatlar: (number | null)[]): string[] {
     const natija: string[] = [];
@@ -62,9 +64,17 @@ export function LineChart({
   return (
     <div className="relative">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={t("an.dinamika")}>
+        <defs>
+          {seriyalar.map((s) => (
+            <linearGradient key={s.kalit} id={`lc-${uid}-${s.kalit}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={s.rang} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={s.rang} stopOpacity={0} />
+            </linearGradient>
+          ))}
+        </defs>
         {[0, 20, 40, 60, 80, 100].map((t) => (
           <g key={t}>
-            <line x1={CHAP} x2={W - ONG} y1={y(t)} y2={y(t)} stroke="var(--grid)" strokeWidth={1} />
+            <line x1={CHAP} x2={W - ONG} y1={y(t)} y2={y(t)} stroke="var(--grid)" strokeWidth={1} strokeDasharray={t === 0 ? undefined : "3 5"} />
             <text x={CHAP - 8} y={y(t) + 4} textAnchor="end" fontSize={11} fill="var(--muted)">
               {t}
             </text>
@@ -82,6 +92,26 @@ export function LineChart({
           <line x1={x(hover)} x2={x(hover)} y1={USTKI} y2={USTKI + grafikH} stroke="var(--line-strong)" strokeWidth={1.5} />
         )}
 
+        {/* chiziq ostidagi yumshoq rangli maydon */}
+        {seriyalar.map((s, si) =>
+          bolaklar(s.qiymatlar).map((d, bi) => {
+            const nuqtalar = d.match(/[\d.]+,[\d.]+/g) ?? [];
+            if (nuqtalar.length < 2) return null;
+            const birinchiX = (nuqtalar[0] ?? "").split(",")[0];
+            const oxirgiX = (nuqtalar[nuqtalar.length - 1] ?? "").split(",")[0];
+            return (
+              <motion.path
+                key={`${kalit}-${s.kalit}-m${bi}`}
+                d={`${d} L${oxirgiX},${tag} L${birinchiX},${tag} Z`}
+                fill={`url(#lc-${uid}-${s.kalit})`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.9, delay: 0.5 + 0.12 * si }}
+              />
+            );
+          }),
+        )}
+
         {seriyalar.map((s, si) =>
           bolaklar(s.qiymatlar).map((d, bi) => (
             <motion.path
@@ -89,8 +119,9 @@ export function LineChart({
               d={d}
               fill="none"
               stroke={s.rang}
-              strokeWidth={2.5}
+              strokeWidth={2.75}
               strokeLinecap="round"
+              style={{ filter: `drop-shadow(0 4px 8px color-mix(in oklab, ${s.rang} 55%, transparent))` }}
               strokeLinejoin="round"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
@@ -143,13 +174,14 @@ export function LineChart({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="pointer-events-none absolute top-2 z-10 min-w-[170px] rounded-xl border-2 px-3 py-2.5 text-[12.5px] shadow-lg"
+            className="pointer-events-none absolute top-2 z-10 min-w-[170px] rounded-[14px] border px-3 py-2.5 text-[12.5px]"
             style={{
               left: `${(x(hover) / W) * 100}%`,
               transform: `translateX(${x(hover) / W > 0.6 ? "-105%" : "8%"})`,
-              background: "var(--surface)",
-              borderColor: "var(--line-strong)",
-              boxShadow: "var(--shadow-md)",
+              background: "var(--glass-strong)",
+              borderColor: "var(--glass-line)",
+              boxShadow: "var(--shadow-lg)",
+              backdropFilter: "blur(16px)",
             }}
           >
             <div className="mb-1.5 font-extrabold" style={{ color: "var(--ink)" }}>

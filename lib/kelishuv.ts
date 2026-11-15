@@ -10,9 +10,9 @@
  * Natijada matn emas, kodlar qaytariladi — nomlar foydalanuvchi tilida
  * lib/kelishuvNomlari.ts orqali yasaladi.
  */
-import { all } from "./db";
-import { materialOlish } from "./queries";
-import { daraja as darajaTopish, metodikaniYuklash } from "./scoring";
+import { all } from "./db.ts";
+import { materialOlish } from "./queries.ts";
+import { daraja as darajaTopish, metodikaniYuklash } from "./scoring.ts";
 import {
   alphaTalqini,
   foizKelishuv,
@@ -22,8 +22,8 @@ import {
   type AlphaTalqini,
   type OlchovDarajasi,
   type Qiymat,
-} from "./statistika";
-import type { Material } from "./types";
+} from "./statistika.ts";
+import type { Material } from "./types.ts";
 
 export type KelishuvGuruh = "muvofiqlik" | "belgilar" | "ballar" | "muammo" | "vosita" | "turlar";
 export type QiymatFormati = "muvofiqlik" | "kompozitsiya" | "son" | "ball" | "bor";
@@ -51,20 +51,20 @@ type TahlilQatori = Omit<Kodlash, "kalit" | "nomi" | "sarlavha_turlari" | "sanoq
   sarlavha_turlari: string;
 };
 
-function kodlashlar(asosiyniQoshish: boolean, materialId?: number): Kodlash[] {
+async function kodlashlar(asosiyniQoshish: boolean, materialId?: number): Promise<Kodlash[]> {
   const shart = materialId ? " WHERE material_id = ?" : "";
   const p = materialId ? [materialId] : [];
   const natija: Kodlash[] = [];
 
   if (asosiyniQoshish) {
     const sanoq = new Map<number, Record<string, number>>();
-    for (const r of all<{ material_id: number; kategoriya: string; soni: number }>(
+    for (const r of await all<{ material_id: number; kategoriya: string; soni: number }>(
       `SELECT material_id, kategoriya, COUNT(*) AS soni FROM belgilar${shart} GROUP BY material_id, kategoriya`,
       p,
     )) {
       sanoq.set(r.material_id, { ...(sanoq.get(r.material_id) ?? {}), [r.kategoriya]: r.soni });
     }
-    for (const t of all<TahlilQatori>(`SELECT * FROM tahlillar${shart}`, p)) {
+    for (const t of await all<TahlilQatori>(`SELECT * FROM tahlillar${shart}`, p)) {
       natija.push({
         ...t,
         kalit: "asosiy",
@@ -76,13 +76,13 @@ function kodlashlar(asosiyniQoshish: boolean, materialId?: number): Kodlash[] {
   }
 
   const eSanoq = new Map<number, Record<string, number>>();
-  for (const r of all<{ id: number; kategoriya: string; soni: number }>(
+  for (const r of await all<{ id: number; kategoriya: string; soni: number }>(
     `SELECT ekspert_tahlil_id AS id, kategoriya, COUNT(*) AS soni FROM ekspert_belgilari
      GROUP BY ekspert_tahlil_id, kategoriya`,
   )) {
     eSanoq.set(r.id, { ...(eSanoq.get(r.id) ?? {}), [r.kategoriya]: r.soni });
   }
-  for (const t of all<TahlilQatori & { id: number; ekspert_id: number; ism: string }>(
+  for (const t of await all<TahlilQatori & { id: number; ekspert_id: number; ism: string }>(
     `SELECT et.*, e.ism FROM ekspert_tahlillari et JOIN ekspertlar e ON e.id = et.ekspert_id
      ${materialId ? "WHERE et.material_id = ?" : ""} ORDER BY e.id`,
     p,
@@ -109,8 +109,8 @@ interface Korsatkich {
   xom: (k: Kodlash) => string | number | null;
 }
 
-function korsatkichlar() {
-  const m = metodikaniYuklash();
+async function korsatkichlar() {
+  const m = await metodikaniYuklash();
   const tartib = (qiymatlar: Record<string, number>) =>
     new Map(
       Object.entries(qiymatlar)
@@ -189,7 +189,7 @@ function korsatkichlar() {
     xom: (k) => k.sanoq[kat.kod] ?? 0,
   }));
 
-  const sarlavhaTurlari = all<{ kod: string }>("SELECT kod FROM lugat WHERE turkum = 'sarlavha_turi' ORDER BY tartib");
+  const sarlavhaTurlari = await all<{ kod: string }>("SELECT kod FROM lugat WHERE turkum = 'sarlavha_turi' ORDER BY tartib");
   return { asosiy, kategoriyalar, sarlavhaTurlari, shkala: m.shkala };
 }
 
@@ -247,12 +247,12 @@ export interface UmumiyKelishuv {
   royxat: KelishuvMateriali[];
 }
 
-export function umumiyKelishuv(asosiyniQoshish = true): UmumiyKelishuv {
-  const k = kodlashlar(asosiyniQoshish);
+export async function umumiyKelishuv(asosiyniQoshish = true): Promise<UmumiyKelishuv> {
+  const k = await kodlashlar(asosiyniQoshish);
   const guruhlar = new Map<number, Kodlash[]>();
   for (const x of k) guruhlar.set(x.material_id, [...(guruhlar.get(x.material_id) ?? []), x]);
   const kopli = [...guruhlar.entries()].filter(([, g]) => g.length >= 2);
-  const { asosiy, kategoriyalar, sarlavhaTurlari } = korsatkichlar();
+  const { asosiy, kategoriyalar, sarlavhaTurlari } = await korsatkichlar();
 
   const qatorlar = asosiy.map((ko) => qator(ko, kopli.map(([, g]) => g.map(ko.qiymat))));
   // Sarlavha turlari: har bir (material × tur) juftligi — bitta «bor/yo‘q» birligi
@@ -264,9 +264,9 @@ export function umumiyKelishuv(asosiyniQoshish = true): UmumiyKelishuv {
   qatorlar.splice(5, 0, turlar);
 
   const materiallar = new Map(
-    all<{ id: number; sarlavha: string; nashr: string }>(
+    (await all<{ id: number; sarlavha: string; nashr: string }>(
       "SELECT m.id, m.sarlavha, n.nomi AS nashr FROM materiallar m JOIN nashrlar n ON n.id = m.nashr_id",
-    ).map((r) => [r.id, r]),
+    )).map((r) => [r.id, r]),
   );
 
   return {
@@ -326,10 +326,10 @@ function holatAniqlash(qiymatlar: Qiymat[], daraja: OlchovDarajasi, shkala100: b
   return eng > qiymatlar.length / 2 ? "kopchilik" : "farq";
 }
 
-export function materialKelishuvi(materialId: number, asosiyniQoshish = true): MaterialKelishuvi {
-  const material = materialOlish(materialId);
-  const k = kodlashlar(asosiyniQoshish, materialId);
-  const { asosiy, kategoriyalar, sarlavhaTurlari, shkala } = korsatkichlar();
+export async function materialKelishuvi(materialId: number, asosiyniQoshish = true): Promise<MaterialKelishuvi> {
+  const material = await materialOlish(materialId);
+  const k = await kodlashlar(asosiyniQoshish, materialId);
+  const { asosiy, kategoriyalar, sarlavhaTurlari, shkala } = await korsatkichlar();
 
   const qatorYasash = (ko: Korsatkich): MaterialQatori => {
     const qiymatlar = k.map(ko.qiymat).filter((v): v is Qiymat => v != null);

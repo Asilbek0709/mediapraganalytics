@@ -5,8 +5,8 @@
  * nom boshlang‘ich (seed) nomga teng bo‘lsa. Tadqiqotchi «Metodika»da nomni o‘zgartirgan
  * bo‘lsa, uning nomi o‘zgarishsiz ko‘rsatiladi.
  */
-import { KATEGORIYALAR, LUGAT, MEZONLAR, SHKALA } from "../seed";
-import type { Til } from "./til";
+import { KATEGORIYALAR, LUGAT, MEZONLAR, SHKALA } from "../seed.ts";
+import type { Til } from "./til.ts";
 
 type Tarjima = Partial<Record<Exclude<Til, "uz">, string>>;
 

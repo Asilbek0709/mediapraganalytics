@@ -3,6 +3,7 @@ import { janrlar, materiallarRoyxati, nashrlarRoyxati } from "@/lib/queries";
 import { metodikaniYuklash } from "@/lib/scoring";
 import type { Holat } from "@/lib/types";
 import { sahifaSarlavhasi } from "@/lib/i18n/server";
+import { sahifaTalab } from "@/lib/sessiya";
 
 const HOLATLAR: Holat[] = ["tahlil_qilingan", "toliq_emas", "tahlil_qilinmagan"];
 
@@ -14,15 +15,22 @@ export default async function MediabazaSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  await sahifaTalab(["admin"]);
   const sp = await searchParams;
   const holat = HOLATLAR.find((h) => h === sp.holat);
 
+  const [boshlangich, nashrlar, janrRoyxati, m] = await Promise.all([
+    materiallarRoyxati({ holat }),
+    nashrlarRoyxati(),
+    janrlar(),
+    metodikaniYuklash(),
+  ]);
   return (
     <MediabazaView
-      boshlangich={materiallarRoyxati({ holat })}
-      nashrlar={nashrlarRoyxati()}
-      janrlar={janrlar()}
-      shkala={metodikaniYuklash().shkala}
+      boshlangich={boshlangich}
+      nashrlar={nashrlar}
+      janrlar={janrRoyxati}
+      shkala={m.shkala}
       yangiOchiq={sp.yangi !== undefined}
       boshlangichHolat={holat ?? ""}
     />

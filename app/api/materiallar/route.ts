@@ -15,11 +15,11 @@ export const GET = (req: Request) => {
       dan: p.get("dan") ?? undefined,
       gacha: p.get("gacha") ?? undefined,
       holat: (p.get("holat") as Holat) || undefined,
-    }),
+    }), 200, ["admin"],
   );
 };
 
 export const POST = async (req: Request) => {
   const body = await req.json();
-  return handle(() => materialQoshish(body), 201);
+  return handle(() => materialQoshish(body), 201, ["admin"]);
 };

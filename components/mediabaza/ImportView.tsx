@@ -47,7 +47,7 @@ function Qadamlar({ bosqich }: { bosqich: Bosqich }) {
             <motion.span
               className="grid h-7 w-7 place-items-center rounded-full text-[12.5px] font-extrabold"
               animate={{
-                background: bajarildi || faol ? "var(--brand)" : "var(--surface-2)",
+                background: bajarildi || faol ? "var(--brand-grad)" : "var(--surface-2)",
                 color: bajarildi || faol ? "var(--brand-ink)" : "var(--muted)",
                 scale: faol ? 1.12 : 1,
               }}
@@ -63,7 +63,7 @@ function Qadamlar({ bosqich }: { bosqich: Bosqich }) {
               <span className="relative mx-1 h-[3px] w-10 overflow-hidden rounded-full" style={{ background: "var(--line)" }}>
                 <motion.span
                   className="absolute inset-y-0 left-0 rounded-full"
-                  style={{ background: "var(--brand)" }}
+                  style={{ background: "var(--brand-grad)" }}
                   animate={{ width: i < joriy ? "100%" : "0%" }}
                   transition={{ duration: 0.45 }}
                 />
@@ -256,7 +256,7 @@ export function ImportView() {
                   <>
                     <motion.span
                       className="grid h-14 w-14 place-items-center rounded-2xl text-[26px]"
-                      style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
+                      style={{ background: "var(--brand-grad)", color: "var(--brand-ink)" }}
                       animate={{ y: sudralmoqda ? -6 : [0, -4, 0] }}
                       transition={sudralmoqda ? spring : { repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
                     >

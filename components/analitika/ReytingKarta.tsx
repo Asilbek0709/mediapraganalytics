@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { useTil } from "@/components/i18n/TilProvider";
 import { RasmTugmasi } from "@/components/rasm/RasmTugmasi";
 import { DarajaBadge } from "@/components/ui/Badge";
@@ -173,6 +174,7 @@ function MaterialRoyxati({
   a: Analitika;
 }) {
   const { son, media } = useTil();
+  const { admin } = useFoydalanuvchi();
   return (
     <div className="min-w-0">
       <h3 className="mb-2 text-[14px] font-bold">{sarlavha}</h3>
@@ -183,9 +185,13 @@ function MaterialRoyxati({
               {x.orin}
             </span>
             <div className="min-w-0 flex-1">
-              <Link href={`/tahlil/${x.m.id}`} className="line-clamp-2 font-semibold no-underline hover:underline" style={{ color: "var(--ink)" }}>
-                {x.m.sarlavha}
-              </Link>
+              {admin ? (
+                <Link href={`/tahlil/${x.m.id}`} className="line-clamp-2 font-semibold no-underline hover:underline" style={{ color: "var(--ink)" }}>
+                  {x.m.sarlavha}
+                </Link>
+              ) : (
+                <span className="line-clamp-2 font-semibold">{x.m.sarlavha}</span>
+              )}
               <div className="text-[12.5px]" style={{ color: "var(--muted)" }}>
                 {x.m.nashr} · {media(x.m.media_turi)}
                 {x.m.sana ? ` · ${sana(x.m.sana)}` : ""}

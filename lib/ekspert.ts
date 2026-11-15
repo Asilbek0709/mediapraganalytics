@@ -4,13 +4,13 @@
  * Ekspert tahlillari asosiy statistikaga (Bosh panel, Analitika, Excel kesimlari)
  * kirmaydi — ular faqat kodlash ishonchliligini (kelishuvni) baholash uchun.
  */
-import { all, hozir, one, run, transaction } from "./db";
-import { ApiError, materialOlish, metodikaSaqlash, tahlilniTekshirish, type TahlilSaqlash } from "./queries";
-import { ekspertTahliliNatijasiniYangilash, hisoblash, MEZON_KODLARI, metodikaniYuklash } from "./scoring";
-import { tarjimon } from "./i18n";
-import type { Til } from "./i18n/til";
-import { cv, kendallW, mediana, ortacha, sd, yarimgaYaxlitlash, type KendallNatija } from "./statistika";
-import type { Belgi, Material, Mezon, Natija, Tahlil } from "./types";
+import { all, hozir, one, run, transaction } from "./db.ts";
+import { ApiError, materialOlish, metodikaSaqlash, tahlilniTekshirish, type TahlilSaqlash } from "./queries.ts";
+import { ekspertTahliliNatijasiniYangilash, hisoblash, MEZON_KODLARI, metodikaniYuklash } from "./scoring.ts";
+import { tarjimon } from "./i18n/index.ts";
+import type { Til } from "./i18n/til.ts";
+import { cv, kendallW, mediana, ortacha, sd, yarimgaYaxlitlash, type KendallNatija } from "./statistika.ts";
+import type { Belgi, Material, Mezon, Natija, Tahlil } from "./types.ts";
 
 export interface Ekspert {
   id: number;
@@ -28,8 +28,8 @@ const matn = (v: unknown): string | null => {
 
 // ------------------------------------------------------------------ ekspertlar
 
-export function ekspertlarRoyxati(): Ekspert[] {
-  return all<Ekspert>(
+export async function ekspertlarRoyxati(): Promise<Ekspert[]> {
+  return await all<Ekspert>(
     `SELECT e.id, e.ism, e.izoh, e.yaratilgan,
             (SELECT COUNT(*) FROM ekspert_tahlillari t WHERE t.ekspert_id = e.id) AS tahlillar_soni,
             EXISTS (SELECT 1 FROM ekspert_vaznlari v WHERE v.ekspert_id = e.id) AS vazn_bor
@@ -37,8 +37,8 @@ export function ekspertlarRoyxati(): Ekspert[] {
   );
 }
 
-function ekspertOlish(id: number): { id: number; ism: string } {
-  const e = one<{ id: number; ism: string }>("SELECT id, ism FROM ekspertlar WHERE id = ?", [id]);
+async function ekspertOlish(id: number): Promise<{ id: number; ism: string }> {
+  const e = await one<{ id: number; ism: string }>("SELECT id, ism FROM ekspertlar WHERE id = ?", [id]);
   if (!e) throw new ApiError(404, "x.ekspertTopilmadi");
   return e;
 }
@@ -51,26 +51,26 @@ function ekspertTekshir(data: unknown) {
   return { ism, izoh: matn(d.izoh) };
 }
 
-export function ekspertQoshish(data: unknown) {
+export async function ekspertQoshish(data: unknown) {
   const { ism, izoh } = ekspertTekshir(data);
-  if (one("SELECT 1 FROM ekspertlar WHERE ism = ?", [ism])) throw new ApiError(409, "x.ekspertMavjud");
-  const r = run("INSERT INTO ekspertlar (ism, izoh, yaratilgan) VALUES (?, ?, ?)", [ism, izoh, hozir()]);
-  return { id: Number(r.lastInsertRowid) };
+  if (await one("SELECT 1 FROM ekspertlar WHERE ism = ?", [ism])) throw new ApiError(409, "x.ekspertMavjud");
+  const r = await one<{ id: number }>("INSERT INTO ekspertlar (ism, izoh, yaratilgan) VALUES (?, ?, ?) RETURNING id", [ism, izoh, hozir()]);
+  return { id: r!.id };
 }
 
-export function ekspertTahrirlash(id: number, data: unknown) {
-  ekspertOlish(id);
+export async function ekspertTahrirlash(id: number, data: unknown) {
+  await ekspertOlish(id);
   const { ism, izoh } = ekspertTekshir(data);
-  if (one("SELECT 1 FROM ekspertlar WHERE ism = ? AND id <> ?", [ism, id])) {
+  if (await one("SELECT 1 FROM ekspertlar WHERE ism = ? AND id <> ?", [ism, id])) {
     throw new ApiError(409, "x.ekspertMavjud");
   }
-  run("UPDATE ekspertlar SET ism = ?, izoh = ? WHERE id = ?", [ism, izoh, id]);
+  await run("UPDATE ekspertlar SET ism = ?, izoh = ? WHERE id = ?", [ism, izoh, id]);
   return { id };
 }
 
-export function ekspertOchirish(id: number) {
-  ekspertOlish(id);
-  run("DELETE FROM ekspertlar WHERE id = ?", [id]);
+export async function ekspertOchirish(id: number) {
+  await ekspertOlish(id);
+  await run("DELETE FROM ekspertlar WHERE id = ?", [id]);
   return { ok: true };
 }
 
@@ -84,28 +84,28 @@ export interface EkspertTahlilJavobi {
   natija: Natija | null;
 }
 
-export function ekspertTahlilOlish(materialId: number, ekspertId: number): EkspertTahlilJavobi {
-  const material = materialOlish(materialId);
-  const ekspert = ekspertOlish(ekspertId);
-  const row = one<Tahlil & { id: number; sarlavha_turlari: string }>(
+export async function ekspertTahlilOlish(materialId: number, ekspertId: number): Promise<EkspertTahlilJavobi> {
+  const material = await materialOlish(materialId);
+  const ekspert = await ekspertOlish(ekspertId);
+  const row = await one<Tahlil & { id: number; sarlavha_turlari: string }>(
     "SELECT * FROM ekspert_tahlillari WHERE material_id = ? AND ekspert_id = ?",
     [materialId, ekspertId],
   );
   if (!row) return { material, ekspert, tahlil: null, belgilar: [], natija: null };
-  const belgilar = all<Belgi>(
+  const belgilar = await all<Belgi>(
     "SELECT id, kategoriya, qism, fragment, izoh FROM ekspert_belgilari WHERE ekspert_tahlil_id = ? ORDER BY id",
     [row.id],
   );
   const tahlil: Tahlil = { ...row, sarlavha_turlari: JSON.parse(row.sarlavha_turlari || "[]") };
-  return { material, ekspert, tahlil, belgilar, natija: hisoblash(tahlil, belgilar, metodikaniYuklash()) };
+  return { material, ekspert, tahlil, belgilar, natija: hisoblash(tahlil, belgilar, await metodikaniYuklash()) };
 }
 
-export function ekspertTahlilSaqlash(materialId: number, ekspertId: number, data: TahlilSaqlash): Natija {
-  materialOlish(materialId);
-  ekspertOlish(ekspertId);
-  const { tahlil, belgilar } = tahlilniTekshirish(data);
-  return transaction(() => {
-    run(
+export async function ekspertTahlilSaqlash(materialId: number, ekspertId: number, data: TahlilSaqlash): Promise<Natija> {
+  await materialOlish(materialId);
+  await ekspertOlish(ekspertId);
+  const { tahlil, belgilar } = await tahlilniTekshirish(data);
+  return await transaction(async () => {
+    await run(
       `INSERT INTO ekspert_tahlillari (material_id, ekspert_id, sarlavha_turlari, kompozitsiya, sar_lid, lid_matn,
                                        sar_matn, auditoriya, izoh, yangilangan)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -126,13 +126,13 @@ export function ekspertTahlilSaqlash(materialId: number, ekspertId: number, data
         hozir(),
       ],
     );
-    const { id } = one<{ id: number }>("SELECT id FROM ekspert_tahlillari WHERE material_id = ? AND ekspert_id = ?", [
+    const { id } = (await one<{ id: number }>("SELECT id FROM ekspert_tahlillari WHERE material_id = ? AND ekspert_id = ?", [
       materialId,
       ekspertId,
-    ])!;
-    run("DELETE FROM ekspert_belgilari WHERE ekspert_tahlil_id = ?", [id]);
+    ]))!;
+    await run("DELETE FROM ekspert_belgilari WHERE ekspert_tahlil_id = ?", [id]);
     for (const b of belgilar) {
-      run("INSERT INTO ekspert_belgilari (ekspert_tahlil_id, kategoriya, qism, fragment, izoh) VALUES (?, ?, ?, ?, ?)", [
+      await run("INSERT INTO ekspert_belgilari (ekspert_tahlil_id, kategoriya, qism, fragment, izoh) VALUES (?, ?, ?, ?, ?)", [
         id,
         b.kategoriya,
         b.qism,
@@ -140,22 +140,22 @@ export function ekspertTahlilSaqlash(materialId: number, ekspertId: number, data
         b.izoh,
       ]);
     }
-    return ekspertTahliliNatijasiniYangilash(id, metodikaniYuklash())!;
+    return (await ekspertTahliliNatijasiniYangilash(id, await metodikaniYuklash()))!;
   });
 }
 
-export function ekspertTahlilOchirish(materialId: number, ekspertId: number) {
-  materialOlish(materialId);
-  ekspertOlish(ekspertId);
-  run("DELETE FROM ekspert_tahlillari WHERE material_id = ? AND ekspert_id = ?", [materialId, ekspertId]);
+export async function ekspertTahlilOchirish(materialId: number, ekspertId: number) {
+  await materialOlish(materialId);
+  await ekspertOlish(ekspertId);
+  await run("DELETE FROM ekspert_tahlillari WHERE material_id = ? AND ekspert_id = ?", [materialId, ekspertId]);
   return { ok: true };
 }
 
 /** Tahlil sahifasidagi baholovchi tanlagichi uchun: har bir ekspert shu materialni tahlil qilganmi. */
-export function materialBaholovchilari(materialId: number) {
+export async function materialBaholovchilari(materialId: number) {
   return {
-    asosiy_bor: !!one("SELECT 1 FROM tahlillar WHERE material_id = ?", [materialId]),
-    ekspertlar: all<{ id: number; ism: string; bor: number }>(
+    asosiy_bor: !!await one("SELECT 1 FROM tahlillar WHERE material_id = ?", [materialId]),
+    ekspertlar: await all<{ id: number; ism: string; bor: number }>(
       `SELECT e.id, e.ism, EXISTS (SELECT 1 FROM ekspert_tahlillari t WHERE t.ekspert_id = e.id AND t.material_id = ?) AS bor
        FROM ekspertlar e ORDER BY e.id`,
       [materialId],
@@ -194,14 +194,14 @@ export interface VaznTahlili {
   metodika_versiya: number;
 }
 
-export function vaznTahlili(): VaznTahlili {
-  const mezonlar = all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
-  const vaznlar: EkspertVazni[] = all<{
+export async function vaznTahlili(): Promise<VaznTahlili> {
+  const mezonlar = await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
+  const vaznlar: EkspertVazni[] = (await all<{
     ekspert_id: number; ism: string; k1: number; k2: number; k3: number; k4: number; k5: number;
     izoh: string | null; yangilangan: string;
   }>(
     `SELECT v.*, e.ism FROM ekspert_vaznlari v JOIN ekspertlar e ON e.id = v.ekspert_id ORDER BY e.id`,
-  ).map((r) => ({
+  )).map((r) => ({
     ekspert_id: r.ekspert_id,
     ism: r.ism,
     vaznlar: { K1: r.k1, K2: r.k2, K3: r.k3, K4: r.k4, K5: r.k5 },
@@ -217,7 +217,7 @@ export function vaznTahlili(): VaznTahlili {
   return {
     vaznlar,
     kendall,
-    metodika_versiya: metodikaniYuklash().versiya,
+    metodika_versiya: (await metodikaniYuklash()).versiya,
     mezonlar: MEZON_KODLARI.map((kod, i) => {
       const ustun = matritsa.map((q) => q[i]);
       const mz = mezonlar.find((m) => m.kod === kod);
@@ -238,8 +238,8 @@ export function vaznTahlili(): VaznTahlili {
   };
 }
 
-export function ekspertVazniSaqlash(ekspertId: number, data: unknown) {
-  ekspertOlish(ekspertId);
+export async function ekspertVazniSaqlash(ekspertId: number, data: unknown) {
+  await ekspertOlish(ekspertId);
   const d = (data ?? {}) as Record<string, unknown>;
   const v = (d.vaznlar ?? {}) as Record<string, unknown>;
   const sonlar = MEZON_KODLARI.map((k) => Number(v[k]));
@@ -250,7 +250,7 @@ export function ekspertVazniSaqlash(ekspertId: number, data: unknown) {
   if (Math.abs(jami - 100) > 0.01) {
     throw new ApiError(422, "x.vaznYigindi", { v: Math.round(jami * 100) / 100 });
   }
-  run(
+  await run(
     `INSERT INTO ekspert_vaznlari (ekspert_id, k1, k2, k3, k4, k5, izoh, yangilangan)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (ekspert_id) DO UPDATE SET k1 = excluded.k1, k2 = excluded.k2, k3 = excluded.k3,
@@ -260,23 +260,23 @@ export function ekspertVazniSaqlash(ekspertId: number, data: unknown) {
   return { ok: true };
 }
 
-export function ekspertVazniOchirish(ekspertId: number) {
-  ekspertOlish(ekspertId);
-  run("DELETE FROM ekspert_vaznlari WHERE ekspert_id = ?", [ekspertId]);
+export async function ekspertVazniOchirish(ekspertId: number) {
+  await ekspertOlish(ekspertId);
+  await run("DELETE FROM ekspert_vaznlari WHERE ekspert_id = ?", [ekspertId]);
   return { ok: true };
 }
 
 /** Ekspertlar o‘rtacha vaznlarini metodikaga yangi versiya sifatida qo‘llaydi. */
-export function vaznlarniQollash(til: Til = "uz") {
-  const t = vaznTahlili();
+export async function vaznlarniQollash(til: Til = "uz") {
+  const t = await vaznTahlili();
   if (t.vaznlar.length < 2 || t.mezonlar.some((m) => m.taklif == null)) {
     throw new ApiError(422, "x.qollashUchun2");
   }
-  const m = metodikaniYuklash();
+  const m = await metodikaniYuklash();
   const tr = tarjimon(til);
   const w = t.kendall ? tr.son(t.kendall.W, 3) : "—";
   const p = t.kendall ? (t.kendall.p < 0.001 ? `< ${tr.son(0.001, 3)}` : tr.son(t.kendall.p, 3)) : "—";
-  return metodikaSaqlash({
+  return await metodikaSaqlash({
     vaznlar: Object.fromEntries(t.mezonlar.map((mz) => [mz.kod, mz.taklif!])),
     muvofiqlik: m.muvofiqlik,
     kompozitsiya: m.kompozitsiya,
@@ -286,4 +286,46 @@ export function vaznlarniQollash(til: Til = "uz") {
     shkala: m.shkala,
     izoh: tr.t("eks.qollashIzoh", { n: t.vaznlar.length, w, p }),
   });
+}
+
+// ------------------------------------------------------------------ ekspert ish joyi
+
+export interface Vazifa {
+  id: number;
+  nashr: string;
+  turi: string;
+  sana: string | null;
+  sarlavha: string;
+  bor: boolean;
+  lpsi: number | null;
+  yangilangan: string | null;
+}
+
+/** Ekspertga: barcha materiallar va faqat UNING o‘z tahlili holati (boshqalarning natijalari qaytarilmaydi). */
+export async function ekspertVazifalari(ekspertId: number): Promise<{
+  ekspert: { id: number; ism: string };
+  vazifalar: Vazifa[];
+  vaznlar: Record<string, number> | null;
+  mezonlar: { kod: string; nomi: string; tavsif: string | null }[];
+}> {
+  const ekspert = await ekspertOlish(ekspertId);
+  const vazifalar = await all<Vazifa>(
+    `SELECT m.id, n.nomi AS nashr, n.turi, m.sana, m.sarlavha,
+            et.id IS NOT NULL AS bor, et.lpsi, et.yangilangan
+     FROM materiallar m
+     JOIN nashrlar n ON n.id = m.nashr_id
+     LEFT JOIN ekspert_tahlillari et ON et.material_id = m.id AND et.ekspert_id = ?
+     ORDER BY m.id DESC`,
+    [ekspertId],
+  );
+  const v = await one<{ k1: number; k2: number; k3: number; k4: number; k5: number }>(
+    "SELECT k1, k2, k3, k4, k5 FROM ekspert_vaznlari WHERE ekspert_id = ?",
+    [ekspertId],
+  );
+  return {
+    ekspert,
+    vazifalar,
+    vaznlar: v ? { K1: v.k1, K2: v.k2, K3: v.k3, K4: v.k4, K5: v.k5 } : null,
+    mezonlar: await all<{ kod: string; nomi: string; tavsif: string | null }>("SELECT kod, nomi, tavsif FROM mezonlar ORDER BY kod"),
+  };
 }

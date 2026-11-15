@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState, type ReactNode } from "react";
+import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 
 import { useTil } from "@/components/i18n/TilProvider";
@@ -41,7 +42,7 @@ export function Dialog({ open, onClose, title, children, footer, keng = false }:
         <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto p-4 sm:p-8">
           <motion.div
             className="fixed inset-0"
-            style={{ background: "rgba(6, 8, 12, 0.6)", backdropFilter: "blur(3px)" }}
+            style={{ background: "rgba(5, 6, 13, 0.55)", backdropFilter: "blur(6px)" }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -51,13 +52,8 @@ export function Dialog({ open, onClose, title, children, footer, keng = false }:
             role="dialog"
             aria-modal="true"
             aria-label={title}
-            className="relative w-full overflow-hidden rounded-2xl border shadow-lg"
-            style={{
-              maxWidth: keng ? 960 : 720,
-              background: "var(--surface)",
-              borderColor: "var(--line-strong)",
-              boxShadow: "var(--shadow-lg)",
-            }}
+            className="dialog-oyna relative w-full overflow-hidden"
+            style={{ maxWidth: keng ? 960 : 720 }}
             initial={{ opacity: 0, scale: 0.94, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 12, transition: { duration: 0.16 } }}
@@ -68,15 +64,21 @@ export function Dialog({ open, onClose, title, children, footer, keng = false }:
               style={{ borderColor: "var(--line)" }}
             >
               <h2>{title}</h2>
-              <button className="btn btn-ghost btn-sm" onClick={onClose} aria-label={t("u.yopish")}>
-                ✕
-              </button>
+              <motion.button
+                className="icon-btn"
+                onClick={onClose}
+                aria-label={t("u.yopish")}
+                whileHover={{ rotate: 90 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              >
+                <X size={18} />
+              </motion.button>
             </div>
             <div className="scroll-thin max-h-[min(70vh,640px)] overflow-y-auto px-5 py-5">{children}</div>
             {footer && (
               <div
                 className="flex flex-wrap items-center justify-end gap-2 border-t px-5 py-4"
-                style={{ borderColor: "var(--line)", background: "var(--surface-2)" }}
+                style={{ borderColor: "var(--line)", background: "color-mix(in oklab, var(--surface-2) 70%, transparent)" }}
               >
                 {footer}
               </div>
