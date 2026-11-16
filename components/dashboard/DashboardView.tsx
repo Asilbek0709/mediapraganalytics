@@ -58,7 +58,16 @@ export function DashboardView({ d }: { d: Dashboard }) {
       </motion.header>
 
       <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi label={t("u.materiallar")} belgi={Files} izoh={t("d.nashrlarBazada", { n: d.nashrlar_soni })}>
+        <Kpi
+          label={t("u.materiallar")}
+          belgi={Files}
+          izoh={
+            <>
+              {t("d.nashrlarBazada", { n: d.nashrlar_soni })}
+              {d.chetda > 0 && <span className="mt-1 block">{t("d.chetda", { n: d.chetda })}</span>}
+            </>
+          }
+        >
           <AnimatedNumber value={d.jami} kasr={0} />
         </Kpi>
         <Kpi

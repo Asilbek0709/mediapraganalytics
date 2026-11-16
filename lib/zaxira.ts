@@ -10,7 +10,7 @@
  */
 import { gunzipSync, gzipSync } from "node:zlib";
 
-import { all, hozir, JADVALLAR, one, run, SXEMA_VERSIYASI, transaction } from "./db.ts";
+import { all, hozir, JADVALLAR, one, run, SXEMA_VERSIYASI, transaction, tiklashdanKeyinTozalash } from "./db.ts";
 import { ApiError } from "./queries.ts";
 import {
   SAQLANADI,
@@ -123,6 +123,7 @@ export async function bazagaYozish(z: ZaxiraMalumoti): Promise<void> {
     for (const b of boglar) {
       await run("UPDATE foydalanuvchilar SET ekspert_id = (SELECT id FROM ekspertlar WHERE ism = ?) WHERE id = ?", [b.ism, b.id]);
     }
+    await tiklashdanKeyinTozalash();
   });
 }
 

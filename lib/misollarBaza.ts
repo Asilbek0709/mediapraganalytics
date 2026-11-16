@@ -4,7 +4,7 @@
  * Tanlov belgi id’siga emas, (material, kategoriya, qism, fragment) to‘plamiga bog‘lanadi:
  * tahlil qayta saqlanganda belgilar qayta yoziladi, lekin fragment o‘zgarmasa tanlov saqlanib qoladi.
  */
-import { all, hozir, one, run } from "./db.ts";
+import { all, hozir, one, run, hisobgaShart } from "./db.ts";
 import { JANR_YOQ } from "./format.ts";
 import { kontekstAjratish, ustmaUst, type Misol } from "./misollar.ts";
 import { ApiError } from "./queries.ts";
@@ -55,11 +55,14 @@ export async function misollarKorpusi(): Promise<Korpus> {
      JOIN materiallar m ON m.id = b.material_id
      JOIN nashrlar n ON n.id = m.nashr_id
      LEFT JOIN tahlillar t ON t.material_id = m.id
-     WHERE b.fragment IS NOT NULL AND TRIM(b.fragment) <> ''
+     WHERE b.fragment IS NOT NULL AND TRIM(b.fragment) <> '' AND ${hisobgaShart("m")}
      ORDER BY b.id`,
   );
   const fragmentsiz =
-    (await one<{ n: number }>("SELECT COUNT(*) AS n FROM belgilar WHERE fragment IS NULL OR TRIM(fragment) = ''"))?.n ?? 0;
+    (await one<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM belgilar b JOIN materiallar m ON m.id = b.material_id
+       WHERE (b.fragment IS NULL OR TRIM(b.fragment) = '') AND ${hisobgaShart("m")}`,
+    ))?.n ?? 0;
 
   // Ekspertlar: material bo‘yicha nechta mustaqil tahlil va ularning belgilari
   const ekspertSoni = new Map(

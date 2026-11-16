@@ -11,11 +11,85 @@
  * transaction() ichidagi barcha all/one/run chaqiruvlari o‘z-o‘zidan shu tranzaksiyada bajariladi.
  */
 import { AsyncLocalStorage } from "node:async_hooks";
+import { createHash } from "node:crypto";
 
+import { heshUchunMatn } from "./manba.ts";
 import { KATEGORIYALAR, LUGAT, MEZONLAR, NASHRLAR, SHKALA } from "./seed.ts";
 
-/** Sxema o‘zgarsa oshiriladi — yangi jadvallar mavjud bazalarga ham qo‘shiladi */
-export const SXEMA_VERSIYASI = 2;
+/**
+ * Sxema migratsiyalari (Alembic o‘rnida): SCHEMA — 2-versiyadagi asos, undan keyingi har bir o‘zgarish —
+ * raqamlangan migratsiya. Baza qaysi versiyada ekani sozlamalar.sxema_versiya da, qo‘llangan migratsiyalar
+ * jurnali — migratsiyalar jadvalida. Yangi o‘zgarish: MIGRATSIYALAR ga keyingi raqam bilan qo‘shiladi.
+ */
+interface Migratsiya {
+  versiya: number;
+  nomi: string;
+  bajar: (u: Ulanish) => Promise<void>;
+}
+
+/** Matn xeshi (takroriy materialni topish uchun) — SHA-256 */
+export function matnHeshi(m: { sarlavha?: string | null; lid?: string | null; matn?: string | null }): string | null {
+  const t = heshUchunMatn(m);
+  return t ? createHash("sha256").update(t).digest("hex") : null;
+}
+
+/** Xeshi yo‘q materiallarga xesh yozish (migratsiyadan va eski nusxani tiklashdan keyin) */
+export async function heshlarniToldirish(u: Ulanish): Promise<void> {
+  const r = await u.sorov("SELECT id, sarlavha, lid, matn FROM materiallar WHERE matn_hash IS NULL", []);
+  for (const q of r.rows) {
+    await u.sorov("UPDATE materiallar SET matn_hash = $1 WHERE id = $2", [
+      matnHeshi(q as { sarlavha: string; lid: string; matn: string }),
+      q.id,
+    ]);
+  }
+}
+
+const MIGRATSIYALAR: Migratsiya[] = [
+  {
+    versiya: 3,
+    nomi: "Material manbasi, tekshiruv belgisi, matn xeshi, manba arxivi; metodika tarixida muallif",
+    bajar: async (u) => {
+      await u.bajar(`
+        ALTER TABLE materiallar ADD COLUMN IF NOT EXISTS manba_turi text NOT NULL DEFAULT 'qolda';
+        ALTER TABLE materiallar ADD COLUMN IF NOT EXISTS olingan_sana text;
+        ALTER TABLE materiallar ADD COLUMN IF NOT EXISTS matn_hash text;
+        ALTER TABLE materiallar ADD COLUMN IF NOT EXISTS tekshirilgan boolean NOT NULL DEFAULT true;
+        DO $$ BEGIN
+          ALTER TABLE materiallar ADD CONSTRAINT materiallar_manba_turi_check
+            CHECK (manba_turi IN ('qolda', 'havola', 'pdf', 'ocr', 'import', 'suniy'));
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
+        CREATE INDEX IF NOT EXISTS idx_materiallar_hash ON materiallar(matn_hash);
+
+        -- asl HTML (siqilgan) — alohida jadvalda: zaxira nusxalarga kirmaydi, aks holda ular juda kattalashadi
+        CREATE TABLE IF NOT EXISTS manba_arxivi (
+            material_id  integer PRIMARY KEY,
+            url          text,
+            olingan_sana text NOT NULL,
+            -- material yaratilgan vaqt: nusxadan tiklangach arxiv aynan shu materialnikimi — shu bilan tekshiriladi
+            material_yaratilgan text NOT NULL,
+            html         bytea NOT NULL,
+            hajm         integer NOT NULL
+        );
+
+        ALTER TABLE metodika_tarixi ADD COLUMN IF NOT EXISTS muallif text;
+
+        CREATE TABLE IF NOT EXISTS migratsiyalar (
+            versiya   integer PRIMARY KEY,
+            nomi      text NOT NULL,
+            qollangan text NOT NULL
+        );
+
+        -- avval yaratilgan namuna (demo) materiallari — sun’iy
+        UPDATE materiallar SET manba_turi = 'suniy' WHERE manba_turi = 'qolda' AND sarlavha LIKE '[DEMO]%';
+      `);
+      await heshlarniToldirish(u);
+    },
+  },
+];
+
+/** Joriy sxema versiyasi — oxirgi migratsiya */
+export const SXEMA_VERSIYASI = Math.max(2, ...MIGRATSIYALAR.map((m) => m.versiya));
 
 export const SCHEMA = `
 CREATE TABLE IF NOT EXISTS nashrlar (
@@ -357,14 +431,40 @@ async function sxemaniTayyorlash(u: Ulanish) {
   if ((await versiya()) >= SXEMA_VERSIYASI) return;
   await u.tranzaksiya(async (tx) => {
     await tx.sorov("SELECT pg_advisory_xact_lock(4207118)", []);
+    // qulfni kutgan paytda boshqa server nusxasi allaqachon yangilagan bo‘lishi mumkin
+    const joriy = await (async () => {
+      const jadval = await tx.sorov("SELECT to_regclass('public.sozlamalar') IS NOT NULL AS bor", []);
+      if (!jadval.rows[0]?.bor) return 0;
+      const r = await tx.sorov("SELECT qiymat FROM sozlamalar WHERE kalit = 'sxema_versiya'", []);
+      return Number(r.rows[0]?.qiymat ?? 0);
+    })();
+    if (joriy >= SXEMA_VERSIYASI) return;
     await tx.bajar(SCHEMA);
     const bor = await tx.sorov("SELECT 1 FROM sozlamalar WHERE kalit = 'metodika_versiya'", []);
     if (!bor.rows.length) await boshlangichMalumotlar(tx);
+    for (const m of MIGRATSIYALAR) {
+      if (m.versiya <= joriy) continue;
+      await m.bajar(tx);
+      await tx.sorov(
+        "INSERT INTO migratsiyalar (versiya, nomi, qollangan) VALUES ($1, $2, $3) ON CONFLICT (versiya) DO NOTHING",
+        [m.versiya, m.nomi, hozir()],
+      );
+    }
     await tx.sorov(
       "INSERT INTO sozlamalar (kalit, qiymat) VALUES ('sxema_versiya', $1) ON CONFLICT (kalit) DO UPDATE SET qiymat = excluded.qiymat",
       [String(SXEMA_VERSIYASI)],
     );
   });
+}
+
+/**
+ * Statistikaga kiradigan materiallar sharti (SQL, «m» — materiallar jadvali taxallusi).
+ * Sun’iy (namuna) va tekshirilmagan materiallar Dashboard, Analitika va hisobotlarga kirmaydi.
+ * Namoyish rejimida (MEDIAPRAG_NAMOYISH=1 — demo baza) sun’iy materiallar ham ko‘rsatiladi.
+ */
+export const namoyishRejimi = () => process.env.MEDIAPRAG_NAMOYISH === "1";
+export function hisobgaShart(a = "m"): string {
+  return namoyishRejimi() ? `${a}.tekshirilgan` : `(${a}.tekshirilgan AND ${a}.manba_turi <> 'suniy')`;
 }
 
 async function boshlangichMalumotlar(u: Ulanish) {
@@ -444,4 +544,20 @@ export async function run(sql: string, params: unknown[] = []): Promise<{ change
 export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
   if (joriyTx.getStore()) return fn();
   return (await getDb()).tranzaksiya((tx) => joriyTx.run(tx, fn));
+}
+
+/**
+ * Nusxadan tiklagandan keyin: xeshi yo‘q materiallarga xesh yoziladi, manba arxivining endi mos
+ * kelmaydigan yozuvlari (material o‘chirilgan yoki shu raqamda endi boshqa material) olib tashlanadi.
+ */
+export async function tiklashdanKeyinTozalash(): Promise<void> {
+  for (const q of await all<{ id: number; sarlavha: string; lid: string | null; matn: string | null }>(
+    "SELECT id, sarlavha, lid, matn FROM materiallar WHERE matn_hash IS NULL",
+  )) {
+    await run("UPDATE materiallar SET matn_hash = ? WHERE id = ?", [matnHeshi(q), q.id]);
+  }
+  await run(
+    `DELETE FROM manba_arxivi a WHERE NOT EXISTS (
+       SELECT 1 FROM materiallar m WHERE m.id = a.material_id AND m.yaratilgan = a.material_yaratilgan)`,
+  );
 }

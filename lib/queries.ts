@@ -1,5 +1,9 @@
 /** Baza bilan ishlovchi amallar: mediabaza, tahlil va metodika. */
-import { all, hozir, one, run, transaction } from "./db.ts";
+import { gunzipSync } from "node:zlib";
+
+import { all, hozir, matnHeshi, one, run, transaction } from "./db.ts";
+import { idRaqami } from "./format.ts";
+import { havolaKaliti, manbaTurimi, type ManbaTuri } from "./manba.ts";
 import { hammasiniQaytaHisoblash, hisoblash, metodikaniYuklash, tahlilNatijasiniYangilash, MEZON_KODLARI } from "./scoring.ts";
 import type { Kalit, Param, Xabar } from "./i18n/index.ts";
 import type {
@@ -88,7 +92,8 @@ export async function nashrOchirish(id: number) {
 
 const MATERIAL_SELECT = `
   SELECT m.*, n.nomi AS nashr, n.turi,
-         t.lpsi, t.daraja, t.material_id IS NOT NULL AS tahlil_bor
+         t.lpsi, t.daraja, t.material_id IS NOT NULL AS tahlil_bor,
+         EXISTS (SELECT 1 FROM manba_arxivi a WHERE a.material_id = m.id) AS arxiv_bor
   FROM materiallar m
   JOIN nashrlar n ON n.id = m.nashr_id
   LEFT JOIN tahlillar t ON t.material_id = m.id`;
@@ -101,6 +106,9 @@ export interface MaterialFiltr {
   dan?: string;
   gacha?: string;
   holat?: Holat;
+  manba?: ManbaTuri;
+  /** «yoq» — faqat tekshirilmaganlar */
+  tekshirilgan?: "ha" | "yoq";
 }
 
 export async function materiallarRoyxati(f: MaterialFiltr = {}): Promise<Material[]> {
@@ -133,6 +141,12 @@ export async function materiallarRoyxati(f: MaterialFiltr = {}): Promise<Materia
   if (f.holat === "tahlil_qilingan") shartlar.push("t.lpsi IS NOT NULL");
   else if (f.holat === "toliq_emas") shartlar.push("t.material_id IS NOT NULL AND t.lpsi IS NULL");
   else if (f.holat === "tahlil_qilinmagan") shartlar.push("t.material_id IS NULL");
+  if (f.manba && manbaTurimi(f.manba)) {
+    shartlar.push("m.manba_turi = ?");
+    params.push(f.manba);
+  }
+  if (f.tekshirilgan === "yoq") shartlar.push("NOT m.tekshirilgan");
+  else if (f.tekshirilgan === "ha") shartlar.push("m.tekshirilgan");
 
   const sql = `${MATERIAL_SELECT}${shartlar.length ? ` WHERE ${shartlar.join(" AND ")}` : ""} ORDER BY m.id DESC`;
   return await all<Material>(sql, params);
@@ -153,6 +167,56 @@ interface MaterialKirish {
   sarlavha: string;
   lid: string | null;
   matn: string | null;
+  manba_turi: ManbaTuri;
+  olingan_sana: string | null;
+  /** berilmagan bo‘lsa — null (tahrirlashda o‘zgarmaydi; yangi materialda — OCR dan boshqasi tekshirilgan) */
+  tekshirilgan: boolean | null;
+  /** asl HTML, gzip (faqat havoladan olinganda) */
+  arxiv: Buffer | null;
+}
+
+const ARXIV_MAKS = 3 * 1024 * 1024;
+
+/** Brauzerdan qaytgan asl HTML nusxasi: base64 → gzip; buzilgan yoki juda katta bo‘lsa — rad */
+function arxivniOqish(v: unknown): Buffer | null {
+  if (typeof v !== "string" || !v) return null;
+  const buf = Buffer.from(v, "base64");
+  if (!buf.length || buf.length > ARXIV_MAKS) throw new ApiError(413, "x.arxivKatta");
+  try {
+    gunzipSync(buf, { maxOutputLength: 8 * 1024 * 1024 });
+  } catch {
+    throw new ApiError(422, "x.arxivBuzilgan");
+  }
+  return buf;
+}
+
+/** Takroriy material: bir xil havola (kuzatish parametrlarisiz) yoki bir xil matn xeshi. */
+export async function takrorniTopish(
+  m: { havola?: string | null; sarlavha?: string | null; lid?: string | null; matn?: string | null },
+  istisno?: number,
+): Promise<{ id: number; sarlavha: string; sabab: "havola" | "matn" } | null> {
+  const kalit = havolaKaliti(m.havola);
+  if (kalit) {
+    for (const q of await all<{ id: number; sarlavha: string; havola: string }>(
+      "SELECT id, sarlavha, havola FROM materiallar WHERE havola IS NOT NULL AND havola <> ''",
+    )) {
+      if (q.id !== istisno && havolaKaliti(q.havola) === kalit) return { id: q.id, sarlavha: q.sarlavha, sabab: "havola" };
+    }
+  }
+  const hesh = matnHeshi(m);
+  if (hesh) {
+    const q = await one<{ id: number; sarlavha: string }>(
+      `SELECT id, sarlavha FROM materiallar WHERE matn_hash = ?${istisno ? " AND id <> ?" : ""} LIMIT 1`,
+      istisno ? [hesh, istisno] : [hesh],
+    );
+    if (q) return { ...q, sabab: "matn" };
+  }
+  return null;
+}
+
+async function takrorBolmasin(m: MaterialKirish, istisno?: number) {
+  const t = await takrorniTopish(m, istisno);
+  if (t) throw new ApiError(409, t.sabab === "havola" ? "x.takrorHavola" : "x.takrorMatn", { id: idRaqami(t.id), v: t.sarlavha });
 }
 
 async function materialTekshir(data: unknown): Promise<MaterialKirish> {
@@ -169,6 +233,9 @@ async function materialTekshir(data: unknown): Promise<MaterialKirish> {
   }
   const sana = matn(d.sana);
   if (sana && !/^\d{4}-\d{2}-\d{2}$/.test(sana)) throw new ApiError(422, "x.sanaFormat");
+  const manbaTuri: ManbaTuri = manbaTurimi(d.manba_turi) ? d.manba_turi : "qolda";
+  const olingan = matn(d.olingan_sana);
+  if (olingan && !/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/.test(olingan)) throw new ApiError(422, "x.sanaFormat");
   return {
     nashr_id: nashrId,
     sana,
@@ -178,35 +245,75 @@ async function materialTekshir(data: unknown): Promise<MaterialKirish> {
     sarlavha,
     lid: matn(d.lid),
     matn: matn(d.matn),
+    manba_turi: manbaTuri,
+    olingan_sana: olingan,
+    tekshirilgan: typeof d.tekshirilgan === "boolean" ? d.tekshirilgan : null,
+    arxiv: manbaTuri === "havola" ? arxivniOqish(d.arxiv) : null,
   };
 }
 
 export async function materialQoshish(data: unknown) {
   const m = await materialTekshir(data);
+  await takrorBolmasin(m);
   const vaqt = hozir();
-  const r = await one<{ id: number }>(
-    `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-    [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, vaqt, vaqt],
-  );
-  return { id: r!.id };
+  // OCR natijasi tadqiqotchi tasdiqlamaguncha «tekshirilmagan» — tahlil va statistikaga o‘tmaydi
+  const tekshirilgan = m.tekshirilgan ?? m.manba_turi !== "ocr";
+  return await transaction(async () => {
+    const r = await one<{ id: number }>(
+      `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan,
+                                manba_turi, olingan_sana, matn_hash, tekshirilgan)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, vaqt, vaqt,
+       m.manba_turi, m.olingan_sana ?? (m.manba_turi === "havola" ? vaqt : null), matnHeshi(m), tekshirilgan],
+    );
+    if (m.arxiv) {
+      await run(
+        `INSERT INTO manba_arxivi (material_id, url, olingan_sana, material_yaratilgan, html, hajm) VALUES (?, ?, ?, ?, ?, ?)`,
+        [r!.id, m.havola, m.olingan_sana ?? vaqt, vaqt, m.arxiv, gunzipSync(m.arxiv).length],
+      );
+    }
+    return { id: r!.id };
+  });
 }
 
 export async function materialTahrirlash(id: number, data: unknown) {
   await materialOlish(id);
   const m = await materialTekshir(data);
+  await takrorBolmasin(m, id);
   await run(
     `UPDATE materiallar SET nashr_id = ?, sana = ?, janr = ?, mavzu = ?, havola = ?, sarlavha = ?,
-            lid = ?, matn = ?, yangilangan = ? WHERE id = ?`,
-    [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, hozir(), id],
+            lid = ?, matn = ?, matn_hash = ?, tekshirilgan = COALESCE(?, tekshirilgan), yangilangan = ? WHERE id = ?`,
+    [m.nashr_id, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid, m.matn, matnHeshi(m), m.tekshirilgan, hozir(), id],
   );
   return { id };
 }
 
-export async function materialOchirish(id: number) {
-  const r = await run("DELETE FROM materiallar WHERE id = ?", [id]);
+/** «Matn asl nusxa bilan solishtirildi» — tekshirilgan belgisini qo‘yish yoki olib tashlash */
+export async function materialTekshiruvi(id: number, data: unknown) {
+  const d = (data ?? {}) as Record<string, unknown>;
+  if (typeof d.tekshirilgan !== "boolean") throw new ApiError(422, "x.notogriSorov");
+  const r = await run("UPDATE materiallar SET tekshirilgan = ?, yangilangan = ? WHERE id = ?", [d.tekshirilgan, hozir(), id]);
   if (!r.changes) throw new ApiError(404, "x.materialTopilmadi");
-  return { ok: true };
+  return { id, tekshirilgan: d.tekshirilgan };
+}
+
+/** Asl HTML nusxasi (faqat havoladan olingan materiallar) */
+export async function materialArxivi(id: number): Promise<{ html: Buffer; url: string | null; olingan_sana: string }> {
+  const r = await one<{ html: Uint8Array; url: string | null; olingan_sana: string }>(
+    "SELECT html, url, olingan_sana FROM manba_arxivi WHERE material_id = ?",
+    [id],
+  );
+  if (!r) throw new ApiError(404, "x.arxivYoq");
+  return { html: gunzipSync(Buffer.from(r.html)), url: r.url, olingan_sana: r.olingan_sana };
+}
+
+export async function materialOchirish(id: number) {
+  return await transaction(async () => {
+    const r = await run("DELETE FROM materiallar WHERE id = ?", [id]);
+    if (!r.changes) throw new ApiError(404, "x.materialTopilmadi");
+    await run("DELETE FROM manba_arxivi WHERE material_id = ?", [id]);
+    return { ok: true };
+  });
 }
 
 // -------------------------------------------------------------------- tahlil
@@ -282,8 +389,13 @@ export async function tahlilOlish(materialId: number) {
   return { material, tahlil, belgilar, natija };
 }
 
+/** ТЗ v2, 3.2: tekshirilmagan (masalan, OCR) material tahlilga o‘tmaydi */
+export function tahlilgaTayyormi(m: Pick<Material, "tekshirilgan">) {
+  if (m.tekshirilgan === false) throw new ApiError(409, "x.tekshirilmagan");
+}
+
 export async function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Promise<Natija> {
-  await materialOlish(materialId);
+  tahlilgaTayyormi(await materialOlish(materialId));
   const { tahlil, belgilar } = await tahlilniTekshirish(data);
   return await transaction(async () => {
     await run(
@@ -377,7 +489,7 @@ export async function metodikaTolik(): Promise<MetodikaTolik> {
 }
 
 export async function metodikaTarixi(): Promise<MetodikaTarix[]> {
-  return (await all<{ versiya: number; sana: string; izoh: string | null; snapshot: string }>(
+  return (await all<{ versiya: number; sana: string; izoh: string | null; snapshot: string; muallif: string | null }>(
     "SELECT * FROM metodika_tarixi ORDER BY versiya DESC",
   )).map((r) => ({ ...r, snapshot: JSON.parse(r.snapshot) as Partial<Metodika> }));
 }
@@ -391,7 +503,8 @@ export interface MetodikaKirish {
   izoh?: string | null;
 }
 
-export async function metodikaSaqlash(data: MetodikaKirish) {
+/** muallif — o‘zgartirgan foydalanuvchi ismi (ТЗ v2, 7: kim, qachon, eski va yangi qiymat) */
+export async function metodikaSaqlash(data: MetodikaKirish, muallif?: string | null) {
   const joriy = await metodikaniYuklash();
   const xatolar: Xabar[] = [];
   const sonlar = (o: Record<string, number>) => Object.values(o).map(Number);
@@ -461,11 +574,12 @@ export async function metodikaSaqlash(data: MetodikaKirish) {
     await run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'metodika_versiya'", [String(yangi)]);
     await run("UPDATE sozlamalar SET qiymat = ? WHERE kalit = 'shkala'", [JSON.stringify(shkala)]);
     const m = await metodikaniYuklash();
-    await run("INSERT INTO metodika_tarixi (versiya, sana, izoh, snapshot) VALUES (?, ?, ?, ?)", [
+    await run("INSERT INTO metodika_tarixi (versiya, sana, izoh, snapshot, muallif) VALUES (?, ?, ?, ?, ?)", [
       yangi,
       hozir(),
       matn(data.izoh),
       JSON.stringify(m),
+      muallif ?? null,
     ]);
     return { versiya: yangi, qayta_hisoblangan: await hammasiniQaytaHisoblash(m) };
   });

@@ -13,6 +13,8 @@ if not exist "node_modules" call npm install
 if not exist ".next\BUILD_ID" call npm run build
 
 set "MEDIAPRAG_DB=%~dp0data\demo-pglite"
+rem Namoyish rejimi: namuna (sun'iy) materiallar ham statistikada ko'rsatiladi
+set "MEDIAPRAG_NAMOYISH=1"
 if not exist "data\demo-pglite" (
     if not exist "data\demo.db" (
         echo Demo baza topilmadi: data\demo.db

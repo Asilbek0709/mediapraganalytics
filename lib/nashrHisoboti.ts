@@ -7,7 +7,7 @@
  * Kuchli/zaif tomonlar shaffof qoida bilan aniqlanadi (sun’iy intellekt emas): ko‘rsatkichda ±CHEGARA_BALL,
  * muammo ulushida ±CHEGARA_FP; statistik ahamiyat alohida ko‘rsatiladi.
  */
-import { all, one } from "./db.ts";
+import { all, one, hisobgaShart } from "./db.ts";
 import { kesim, materialQatorlari, ortacha, type MaterialQator } from "./analytics.ts";
 import { KORSATKICHLAR, type Korsatkich } from "./davrlar.ts";
 import type { Misol } from "./misollar.ts";
@@ -336,7 +336,7 @@ export async function hisobotNashrlari(): Promise<{ id: number; nomi: string; tu
   return await all<{ id: number; nomi: string; turi: MediaTuri; toliq: number }>(
     `SELECT n.id, n.nomi, n.turi, COUNT(t.material_id) AS toliq
      FROM nashrlar n
-     LEFT JOIN materiallar m ON m.nashr_id = n.id
+     LEFT JOIN materiallar m ON m.nashr_id = n.id AND ${hisobgaShart("m")}
      LEFT JOIN tahlillar t ON t.material_id = m.id AND t.lpsi IS NOT NULL
      GROUP BY n.id ORDER BY n.turi, n.nomi`,
   );

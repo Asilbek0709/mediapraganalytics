@@ -1,3 +1,5 @@
+import type { ManbaTuri } from "./manba.ts";
+
 /** Platformaning umumiy tiplari (server va mijoz uchun). */
 
 export type MediaTuri = "bosma" | "raqamli";
@@ -63,6 +65,8 @@ export interface MetodikaTarix {
   versiya: number;
   sana: string;
   izoh: string | null;
+  /** kim o‘zgartirgan (eski versiyalarda — yo‘q) */
+  muallif?: string | null;
   snapshot: Partial<Metodika>;
 }
 
@@ -83,6 +87,15 @@ export interface Material {
   lpsi: number | null;
   daraja: string | null;
   tahlil_bor: number;
+  /** qayerdan olingan: qo‘lda, havola, pdf, ocr, import, sun’iy */
+  manba_turi: ManbaTuri;
+  /** havoladan yuklangan vaqt */
+  olingan_sana: string | null;
+  matn_hash: string | null;
+  /** tadqiqotchi tekshirganmi (OCR natijasi) — tekshirilmagan material tahlil va statistikaga kirmaydi */
+  tekshirilgan: boolean;
+  /** asl HTML nusxasi saqlanganmi */
+  arxiv_bor?: boolean;
 }
 
 export interface Belgi {
@@ -177,6 +190,8 @@ export interface Dashboard {
   tahlil_qilingan: number;
   toliq_emas: number;
   tahlil_kutmoqda: number;
+  /** statistikadan tashqaridagi (tekshirilmagan yoki sun’iy) materiallar soni */
+  chetda: number;
   nashrlar_soni: number;
   ortacha_lpsi: number | null;
   ortacha_daraja: string | null;

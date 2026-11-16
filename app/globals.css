@@ -1179,3 +1179,28 @@ textarea:disabled:hover {
   border-color: var(--line);
   box-shadow: none;
 }
+
+/* fayl tashlash joyi (Mediabaza → Fayldan) */
+.tashlash-joyi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 210px;
+  padding: 28px;
+  border-radius: 18px;
+  border: 2px dashed color-mix(in oklab, var(--brand) 40%, var(--line));
+  background: color-mix(in oklab, var(--brand) 5%, transparent);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.25s ease;
+}
+.tashlash-joyi:hover,
+.tashlash-joyi[data-ustida="true"] {
+  border-color: var(--brand);
+  background: color-mix(in oklab, var(--brand) 10%, transparent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.tashlash-joyi:disabled { cursor: progress; }

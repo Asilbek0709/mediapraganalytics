@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { CircleAlert, ShieldCheck } from "lucide-react";
+
+import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
 import { LpsiGauge, MezonBars } from "@/components/charts/LpsiGauge";
 import { useTil } from "@/components/i18n/TilProvider";
 import { Card } from "@/components/ui/Card";
@@ -164,6 +167,9 @@ export function TahlilView({
   const toast = useToast();
   const router = useRouter();
   const { t, son, atama, mediaQ, qism: qismNomi, izohMatni } = useTil();
+  const { admin } = useFoydalanuvchi();
+  // ТЗ v2: tekshirilmagan (masalan, OCR) material tahlilga o‘tmaydi
+  const [tekshirilgan, setTekshirilgan] = useState(material.tekshirilgan !== false);
   const AUDITORIYA = (["1", "2", "3", "4", "5"] as const).map((kod) => ({ kod, nomi: t(`th.aud.${kod}`) }));
   const lugatVariantlari = (turkum: string) =>
     (met.lugat[turkum] ?? []).map((o) => ({ kod: o.kod, nomi: atama.lugat(turkum, o.kod, o.nomi) }));
@@ -478,6 +484,13 @@ export function TahlilView({
                 {t("th.manba")}
               </a>
             )}
+            {material.manba_turi && material.manba_turi !== "qolda" && <span className="tag">{t(`mb.mt.${material.manba_turi}`)}</span>}
+            {material.olingan_sana && <span className="tag">{t("mb.m.olingan", { v: sanaVaqt(material.olingan_sana) })}</span>}
+            {admin && material.arxiv_bor && (
+              <a className="tag" href={`/api/materiallar/${material.id}/arxiv`}>
+                {t("mb.m.asl")} ↓
+              </a>
+            )}
           </div>
         </div>
         <div className="flex flex-wrap gap-2.5">
@@ -498,11 +511,41 @@ export function TahlilView({
           <motion.button className="btn btn-danger" onClick={tozalash} {...pressable}>
             {t("th.tozalash")}
           </motion.button>
-          <motion.button className="btn btn-primary" onClick={saqlash} disabled={saqlanmoqda} {...pressable}>
+          <motion.button className="btn btn-primary" onClick={saqlash} disabled={saqlanmoqda || !tekshirilgan} {...pressable}>
             {saqlanmoqda ? t("u.saqlanmoqda") : t("u.saqlash")}
           </motion.button>
         </div>
       </motion.header>
+
+      {!tekshirilgan && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 text-[13.5px]"
+          style={{ background: "color-mix(in oklab, var(--lvl-1) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--lvl-1) 45%, transparent)" }}
+        >
+          <CircleAlert size={18} style={{ color: "var(--lvl-1)" }} className="flex-none" />
+          <span className="min-w-0 flex-1 font-semibold">{t("x.tekshirilmagan")}</span>
+          {admin && (
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={async () => {
+                try {
+                  await api.put(`/api/materiallar/${material.id}/tekshiruv`, { tekshirilgan: true });
+                  setTekshirilgan(true);
+                  toast(t("mb.tekshiruvSaqlandi"));
+                  router.refresh();
+                } catch (e) {
+                  toast(xatoMatni(e), "error");
+                }
+              }}
+            >
+              <ShieldCheck size={15} />
+              {t("mb.tekshirildiTugma")}
+            </button>
+          )}
+        </motion.div>
+      )}
 
       {baholovchi.tur === "ekspert" && (
         <motion.div
@@ -789,7 +832,7 @@ export function TahlilView({
             <Link className="btn" href={qaytish.href}>
               {qaytish.href === "/mediabaza" ? t("th.qaytish") : `← ${t(qaytish.kalit)}`}
             </Link>
-            <motion.button className="btn btn-primary" onClick={saqlash} disabled={saqlanmoqda} {...pressable}>
+            <motion.button className="btn btn-primary" onClick={saqlash} disabled={saqlanmoqda || !tekshirilgan} {...pressable}>
               {t("u.saqlash")}
             </motion.button>
           </div>

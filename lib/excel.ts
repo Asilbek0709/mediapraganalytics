@@ -4,9 +4,9 @@ import ExcelJS from "exceljs";
 import type { Ahamiyat, KopGuruhBolimi, Korsatkich } from "./ahamiyat.ts";
 import { analitika, type Granulyatsiya } from "./analitika.ts";
 import { JANR_YOQ, kesim, materialQatorlari, muammolarChastotasi } from "./analytics.ts";
-import { all, hozir } from "./db.ts";
+import { all, hozir, hisobgaShart } from "./db.ts";
 import { vaznTahlili } from "./ekspert.ts";
-import { tarjimon, type Tarjimon } from "./i18n/index.ts";
+import { tarjimon, type Tarjimon, type Kalit } from "./i18n/index.ts";
 import type { Til } from "./i18n/til.ts";
 import { umumiyKelishuv } from "./kelishuv.ts";
 import { guruhNomi, korsatkichNomi } from "./kelishuvNomlari.ts";
@@ -208,17 +208,18 @@ export async function excelHisobot(til: Til, { ekspertUchun = false }: { ekspert
   const materiallar = await all<{
     id: number; nashr: string; media_turi: string; sana: string | null; janr: string | null;
     mavzu: string | null; havola: string | null; sarlavha: string; lid: string | null;
-    lpsi: number | null; tahlil_bor: number;
+    lpsi: number | null; tahlil_bor: number; manba_turi: string; olingan_sana: string | null;
   }>(
     `SELECT m.id, n.nomi AS nashr, n.turi AS media_turi, m.sana, m.janr, m.mavzu, m.havola, m.sarlavha, m.lid,
-            t.lpsi, t.material_id IS NOT NULL AS tahlil_bor
+            m.manba_turi, m.olingan_sana, t.lpsi, t.material_id IS NOT NULL AS tahlil_bor
      FROM materiallar m JOIN nashrlar n ON n.id = m.nashr_id
-     LEFT JOIN tahlillar t ON t.material_id = m.id ORDER BY m.id`,
+     LEFT JOIN tahlillar t ON t.material_id = m.id
+     WHERE ${hisobgaShart("m")} ORDER BY m.id`,
   );
   const ws1 = wb.addWorksheet(t("xl.v.materiallar"));
   ws1.addRow([
     "ID", t("u.nashr"), t("u.mediaTuri"), t("u.sana"), t("u.janr"), t("u.mavzu"), t("u.havola"),
-    t("u.sarlavha"), t("u.lid"), t("xl.holat"),
+    t("mb.manba"), t("xl.olinganSana"), t("u.sarlavha"), t("u.lid"), t("xl.holat"),
   ]);
   for (const r of materiallar) {
     ws1.addRow([
@@ -229,12 +230,14 @@ export async function excelHisobot(til: Til, { ekspertUchun = false }: { ekspert
       r.janr ? atama.janr(r.janr) : null,
       r.mavzu,
       r.havola,
+      t(`mb.mt.${r.manba_turi}` as Kalit),
+      r.olingan_sana ? r.olingan_sana.replace("T", " ").slice(0, 16) : null,
       r.sarlavha,
       r.lid,
       r.lpsi != null ? t("xl.h.qilingan") : r.tahlil_bor ? t("u.toliqEmas") : t("u.tahlilQilinmagan"),
     ]);
   }
-  bezash(ws1, [10, 20, 13, 12, 14, 18, 30, 50, 50, 18]);
+  bezash(ws1, [10, 20, 13, 12, 14, 18, 30, 16, 17, 50, 50, 18]);
 
   // 2. Tahlil natijalari
   const kategoriyalar = Object.values(m.kategoriyalar);
@@ -249,7 +252,8 @@ export async function excelHisobot(til: Til, { ekspertUchun = false }: { ekspert
             t.sar_matn, t.kompozitsiya, t.auditoriya, t.izoh, t.k1, t.k2, t.k3, t.k4, t.k5, t.lpsi, t.daraja,
             t.metodika_versiya
      FROM tahlillar t JOIN materiallar m ON m.id = t.material_id
-     JOIN nashrlar n ON n.id = m.nashr_id ORDER BY m.id`,
+     JOIN nashrlar n ON n.id = m.nashr_id
+     WHERE ${hisobgaShart("m")} ORDER BY m.id`,
   );
   const ws2 = wb.addWorksheet(t("xl.v.tahlil"));
   ws2.addRow([

@@ -11,7 +11,41 @@ import { useToast } from "@/components/ui/Toast";
 import { fadeUp, pressable, spring } from "@/components/ui/motion";
 import { api, xatoMatni } from "@/lib/client";
 import { sanaVaqt } from "@/lib/format";
-import type { MetodikaTarix, MetodikaTolik } from "@/lib/types";
+import type { Metodika, MetodikaTarix, MetodikaTolik } from "@/lib/types";
+
+type Tarjimon = ReturnType<typeof useTil>;
+
+/** Ikki versiya orasidagi farq: «K1: 25 → 30», «Abstrakt jumla: jarima 5 → 7», «Shkala: …» */
+function farqlar(yangi: Partial<Metodika>, eski: Partial<Metodika> | undefined, tr: Tarjimon): string[] {
+  if (!eski) return [];
+  const { son, atama, t } = tr;
+  const natija: string[] = [];
+  const ozgardi = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+  for (const k of MEZONLAR) {
+    if (ozgardi(eski.vaznlar?.[k], yangi.vaznlar?.[k])) natija.push(`${k}: ${son(eski.vaznlar?.[k])} → ${son(yangi.vaznlar?.[k])}`);
+  }
+  for (const turkum of ["muvofiqlik", "kompozitsiya"] as const) {
+    const kodlar = new Set([...Object.keys(eski[turkum] ?? {}), ...Object.keys(yangi[turkum] ?? {})]);
+    for (const kod of kodlar) {
+      const a = eski[turkum]?.[kod];
+      const b = yangi[turkum]?.[kod];
+      if (ozgardi(a, b)) natija.push(`${atama.lugat(turkum, kod)}: ${son(a)} → ${son(b)}`);
+    }
+  }
+  const kodlar = new Set([...Object.keys(eski.kategoriyalar ?? {}), ...Object.keys(yangi.kategoriyalar ?? {})]);
+  for (const kod of kodlar) {
+    const a = eski.kategoriyalar?.[kod];
+    const b = yangi.kategoriyalar?.[kod];
+    const nomi = atama.kategoriya(kod, b?.nomi ?? a?.nomi ?? kod);
+    if (ozgardi(a?.jarima, b?.jarima)) natija.push(`${nomi}: ${son(a?.jarima)} → ${son(b?.jarima)}`);
+    if (ozgardi(a?.mezon, b?.mezon)) natija.push(`${nomi}: ${a?.mezon ?? "—"} → ${b?.mezon ?? "—"}`);
+  }
+  if (ozgardi(eski.shkala?.map((s) => s.gacha), yangi.shkala?.map((s) => s.gacha))) {
+    const sh = (x?: { gacha: number }[]) => (x ?? []).map((s) => son(s.gacha)).join(" / ");
+    natija.push(`${t("mt.shkala")}: ${sh(eski.shkala)} → ${sh(yangi.shkala)}`);
+  }
+  return natija;
+}
 
 const MEZONLAR = ["K1", "K2", "K3", "K4", "K5"];
 /** Seed yozgan v1 izohi — tarjima qilib ko‘rsatiladi; tadqiqotchi izohlari o‘zgarishsiz. */
@@ -39,7 +73,8 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
   const { admin } = useFoydalanuvchi();
   const toast = useToast();
   const router = useRouter();
-  const { t, son, atama, til } = useTil();
+  const tr = useTil();
+  const { t, son, atama, til } = tr;
   const [forma, setForma] = useState<Forma>(() => formaDan(met));
   const [izoh, setIzoh] = useState("");
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
@@ -416,12 +451,14 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
                   <th>{t("mt.versiya")}</th>
                   <th className="num">{t("u.sana")}</th>
                   <th>{t("u.izoh")}</th>
+                  <th>{t("mt.kim")}</th>
                   <th>{t("mt.vaznlar")}</th>
+                  <th>{t("mt.ozgarishlar")}</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {tarix.map((v) => (
+                {tarix.map((v, i) => (
                   <tr key={v.versiya}>
                     <td className="font-extrabold">
                       v{v.versiya}
@@ -429,10 +466,27 @@ export function MetodikaView({ met, tarix }: { met: MetodikaTolik; tarix: Metodi
                     </td>
                     <td className="num">{sanaVaqt(v.sana)}</td>
                     <td>{v.izoh === BOSHLANGICH_IZOH ? t("mt.boshlangich") : (v.izoh ?? "—")}</td>
+                    <td>{v.muallif ?? "—"}</td>
                     <td className="hint">
                       {v.snapshot.vaznlar
                         ? MEZONLAR.map((k) => `${k} ${son(v.snapshot.vaznlar?.[k])}`).join(" · ")
                         : "—"}
+                    </td>
+                    <td className="min-w-[220px] text-[12.5px]">
+                      {(() => {
+                        const oldingi = tarix[i + 1];
+                        if (!oldingi) return <span className="hint">—</span>;
+                        const f = farqlar(v.snapshot, oldingi.snapshot, tr);
+                        return f.length ? (
+                          <ul className="flex flex-col gap-0.5">
+                            {f.map((x) => (
+                              <li key={x}>{x}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="hint">{t("mt.ozgarishYoq")}</span>
+                        );
+                      })()}
                     </td>
                     <td>
                       <div className="flex justify-end">

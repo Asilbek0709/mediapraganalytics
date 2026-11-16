@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { CircleAlert, ExternalLink, FileDown, FileUp, Link2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,9 +12,12 @@ import { DarajaBadge, HolatTag } from "@/components/ui/Badge";
 import { Card, CardHead } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/components/ui/Toast";
+import { FaylOynasi, HavolaOynasi, type ManbaQoralama } from "./ManbaOynalari";
 import { pressable, rowIn } from "@/components/ui/motion";
 import { api, xatoMatni } from "@/lib/client";
-import { idRaqami, sana } from "@/lib/format";
+import { idRaqami, sana, sanaVaqt } from "@/lib/format";
+import type { Kalit } from "@/lib/i18n";
+import type { ManbaTuri } from "@/lib/manba";
 import type { Material, MediaTuri, Nashr, ShkalaOraliq } from "@/lib/types";
 
 interface Props {
@@ -25,7 +29,7 @@ interface Props {
   boshlangichHolat?: string;
 }
 
-const BOSH_FILTR = { q: "", nashr_id: "", turi: "", janr: "", holat: "", dan: "", gacha: "" };
+const BOSH_FILTR = { q: "", nashr_id: "", turi: "", janr: "", holat: "", manba: "", dan: "", gacha: "" };
 type Filtr = typeof BOSH_FILTR;
 
 const BOSH_FORMA = {
@@ -66,6 +70,12 @@ export function MediabazaView({
   const [saqlanmoqda, setSaqlanmoqda] = useState(false);
 
   const [nashrOchiq, setNashrOchiq] = useState(false);
+  const [havolaOchiq, setHavolaOchiq] = useState(false);
+  const [faylOchiq, setFaylOchiq] = useState(false);
+  // forma qayerdan to‘ldirildi (havola, fayl) yoki tahrirlanayotgan materialning manbasi
+  const [manba, setManba] = useState<ManbaQoralama | null>(null);
+  const [tahrirMaterial, setTahrirMaterial] = useState<Material | null>(null);
+  const [tekshirilgan, setTekshirilgan] = useState(true);
   const [nashrXato, setNashrXato] = useState("");
   const [yangiNashr, setYangiNashr] = useState<{ nomi: string; turi: MediaTuri }>({ nomi: "", turi: "bosma" });
 
@@ -75,7 +85,10 @@ export function MediabazaView({
     const no = ++sorovNo.current;
     setYuklanmoqda(true);
     try {
-      const qs = new URLSearchParams(Object.entries(f).filter(([, v]) => v) as [string, string][]);
+      const { manba: mf, ...qolgan } = f;
+      const qs = new URLSearchParams(Object.entries(qolgan).filter(([, v]) => v) as [string, string][]);
+      if (mf === "tekshirilmagan") qs.set("tekshirilgan", "yoq");
+      else if (mf) qs.set("manba", mf);
       const natija = await api.get<Material[]>(`/api/materiallar?${qs}`);
       if (no === sorovNo.current) setRows(natija);
     } catch (e) {
@@ -95,9 +108,29 @@ export function MediabazaView({
     setNashrlar(await api.get<Nashr[]>("/api/nashrlar"));
   }, []);
 
-  function formaniOchish(m?: Material) {
+  function formaniOchish(m?: Material, qoralama?: ManbaQoralama) {
     setFormaXato("");
     setTahrirId(m?.id ?? null);
+    setTahrirMaterial(m ?? null);
+    setManba(qoralama ?? null);
+    setTekshirilgan(m ? m.tekshirilgan : qoralama?.turi !== "ocr");
+    if (qoralama) {
+      const q = qoralama.maydonlar;
+      setForma({
+        ...BOSH_FORMA,
+        nashr_id: q.nashr_id ? String(q.nashr_id) : "",
+        sana: q.sana ?? "",
+        mavzu: q.mavzu ?? "",
+        havola: q.havola ?? "",
+        sarlavha: q.sarlavha,
+        lid: q.lid,
+        matn: q.matn,
+      });
+      setHavolaOchiq(false);
+      setFaylOchiq(false);
+      setFormaOchiq(true);
+      return;
+    }
     setForma(
       m
         ? {
@@ -127,7 +160,13 @@ export function MediabazaView({
     setSaqlanmoqda(true);
     setFormaXato("");
     try {
-      const body = { ...forma, nashr_id: Number(forma.nashr_id) };
+      const body = {
+        ...forma,
+        nashr_id: Number(forma.nashr_id),
+        // yangi materialda — qayerdan olingani; tahrirda manba o‘zgarmaydi
+        ...(manba && !tahrirId ? { manba_turi: manba.turi, olingan_sana: manba.olingan_sana, arxiv: manba.arxiv } : {}),
+        tekshirilgan,
+      };
       const javob = tahrirId
         ? await api.put<{ id: number }>(`/api/materiallar/${tahrirId}`, body)
         : await api.post<{ id: number }>("/api/materiallar", body);
@@ -153,6 +192,17 @@ export function MediabazaView({
       setRows((r) => r.filter((x) => x.id !== m.id));
       toast(t("mb.ochirildi"));
       nashrlarniYangilash();
+      router.refresh();
+    } catch (e) {
+      toast(xatoMatni(e), "error");
+    }
+  }
+
+  async function tekshirildiDeb(m: Material) {
+    try {
+      await api.put(`/api/materiallar/${m.id}/tekshiruv`, { tekshirilgan: true });
+      setRows((r) => r.map((x) => (x.id === m.id ? { ...x, tekshirilgan: true } : x)));
+      toast(t("mb.tekshiruvSaqlandi"));
       router.refresh();
     } catch (e) {
       toast(xatoMatni(e), "error");
@@ -202,6 +252,14 @@ export function MediabazaView({
         </div>
         {admin && (
         <div className="flex flex-wrap gap-2.5">
+          <motion.button className="btn" onClick={() => setHavolaOchiq(true)} {...pressable}>
+            <Link2 size={16} />
+            {t("mb.havoladan")}
+          </motion.button>
+          <motion.button className="btn" onClick={() => setFaylOchiq(true)} {...pressable}>
+            <FileUp size={16} />
+            {t("mb.fayldan")}
+          </motion.button>
           <motion.div {...pressable}>
             <Link className="btn" href="/mediabaza/import">
               {t("mb.import")}
@@ -218,7 +276,7 @@ export function MediabazaView({
       </motion.header>
 
       <Card koarish={false} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[2fr_repeat(4,1fr)_repeat(2,0.9fr)]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[2fr_repeat(5,1fr)_repeat(2,0.9fr)]">
           <label className="field">
             <span>{t("mb.qidiruv")}</span>
             <input type="search" placeholder={t("mb.qidiruvPh")} {...maydon("q")} />
@@ -260,6 +318,18 @@ export function MediabazaView({
               <option value="tahlil_qilingan">{t("mb.h.qilingan")}</option>
               <option value="toliq_emas">{t("mb.h.toliqEmas")}</option>
               <option value="tahlil_qilinmagan">{t("mb.h.qilinmagan")}</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>{t("mb.manba")}</span>
+            <select {...maydon("manba")}>
+              <option value="">{t("mb.manbaBarcha")}</option>
+              {(["qolda", "havola", "pdf", "ocr", "import", "suniy"] as ManbaTuri[]).map((m) => (
+                <option key={m} value={m}>
+                  {t(`mb.mt.${m}`)}
+                </option>
+              ))}
+              <option value="tekshirilmagan">{t("mb.faqatTekshirilmagan")}</option>
             </select>
           </label>
           <label className="field">
@@ -310,6 +380,14 @@ export function MediabazaView({
                     <td>{m.mavzu || "—"}</td>
                     <td className="min-w-[260px]">
                       <Link href={`/tahlil/${m.id}`}>{m.sarlavha}</Link>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {m.manba_turi !== "qolda" && <span className="tag !text-[11px]">{t(`mb.mt.${m.manba_turi}`)}</span>}
+                        {!m.tekshirilgan && (
+                          <span className="tag !text-[11px]" style={{ color: "var(--danger)", borderColor: "color-mix(in oklab, var(--danger) 45%, transparent)" }}>
+                            <CircleAlert size={11} /> {t("mb.tekshirilmagan")}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <DarajaBadge daraja={m.daraja} lpsi={m.lpsi} shkala={shkala} />
@@ -320,6 +398,12 @@ export function MediabazaView({
                         <Link className="btn btn-sm btn-primary" href={`/tahlil/${m.id}`}>
                           {t("mb.tahlil")}
                         </Link>
+                        {admin && !m.tekshirilgan && (
+                          <button className="btn btn-sm" onClick={() => tekshirildiDeb(m)}>
+                            <ShieldCheck size={14} />
+                            {t("mb.tekshirildiTugma")}
+                          </button>
+                        )}
                         {admin && m.tahlil_bor ? (
                           <a className="btn btn-sm" href={`/api/materiallar/${m.id}/pdf`} target="_blank" rel="noopener">
                             PDF
@@ -352,6 +436,9 @@ export function MediabazaView({
         </motion.div>
       </Card>
 
+      <HavolaOynasi open={havolaOchiq} onClose={() => setHavolaOchiq(false)} onTayyor={(q) => formaniOchish(undefined, q)} />
+      <FaylOynasi open={faylOchiq} onClose={() => setFaylOchiq(false)} onTayyor={(q) => formaniOchish(undefined, q)} />
+
       <Dialog
         open={formaOchiq}
         onClose={() => setFormaOchiq(false)}
@@ -371,6 +458,7 @@ export function MediabazaView({
           </>
         }
       >
+        <ManbaPaneli manba={manba} material={tahrirMaterial} />
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
           <label className="field">
             <span>{t("u.nashr")} *</span>
@@ -417,6 +505,18 @@ export function MediabazaView({
             <textarea rows={10} {...formaMaydon("matn")} />
           </label>
         </div>
+        {(manba?.turi === "ocr" || tahrirMaterial?.manba_turi === "ocr" || (tahrirMaterial && !tahrirMaterial.tekshirilgan)) && (
+          <label
+            className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl px-4 py-3"
+            style={{ background: tekshirilgan ? "var(--accent-soft)" : "color-mix(in oklab, var(--lvl-1) 14%, transparent)" }}
+          >
+            <input type="checkbox" className="mt-1 h-4 w-4" checked={tekshirilgan} onChange={(e) => setTekshirilgan(e.target.checked)} />
+            <span>
+              <span className="block text-[13.5px] font-bold">{t("mb.tekshirildi")}</span>
+              <span className="hint">{t("mb.tekshirildiIzoh")}</span>
+            </span>
+          </label>
+        )}
         <AnimatePresence>
           {formaXato && (
             <motion.p
@@ -536,5 +636,58 @@ export function MediabazaView({
         )}
       </Dialog>
     </div>
+  );
+}
+
+/** Formadagi manba ma’lumoti: qayerdan olingan, ogohlantirishlar, takror */
+function ManbaPaneli({ manba, material }: { manba: ManbaQoralama | null; material: Material | null }) {
+  const { t } = useTil();
+  const turi = manba?.turi ?? material?.manba_turi;
+  if (!turi || turi === "qolda") return null;
+  const olingan = manba?.olingan_sana ?? material?.olingan_sana;
+  const takror = manba?.takror;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mb-4 rounded-2xl px-4 py-3"
+      style={{ background: "color-mix(in oklab, var(--brand) 7%, transparent)", border: "1px solid color-mix(in oklab, var(--brand) 22%, var(--line))" }}
+    >
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
+        <span className="tag">{t(`mb.mt.${turi}`)}</span>
+        {olingan && <span style={{ color: "var(--muted)" }}>{t("mb.m.olingan", { v: sanaVaqt(olingan) })}</span>}
+        {manba?.qoida && (
+          <span style={{ color: "var(--muted)" }}>{t("mb.m.qoida", { v: manba.qoida === "umumiy" ? t("mb.m.umumiy") : manba.qoida })}</span>
+        )}
+        {material?.arxiv_bor && (
+          <a className="inline-flex items-center gap-1 font-semibold" href={`/api/materiallar/${material.id}/arxiv`}>
+            <FileDown size={14} /> {t("mb.m.asl")}
+          </a>
+        )}
+        {(manba?.maydonlar.havola ?? material?.havola) && (
+          <a className="inline-flex items-center gap-1 font-semibold" href={manba?.maydonlar.havola ?? material?.havola ?? "#"} target="_blank" rel="noopener noreferrer">
+            <ExternalLink size={14} /> {new URL(manba?.maydonlar.havola ?? material?.havola ?? "https://x").hostname}
+          </a>
+        )}
+      </div>
+      {takror && (
+        <p className="mt-2 text-[13px] font-semibold" style={{ color: "var(--danger)" }}>
+          {takror.sabab === "havola" ? t("mb.m.takrorHavola") : t("mb.m.takrorMatn")}{" "}
+          <Link href={`/tahlil/${takror.id}`}>
+            {idRaqami(takror.id)} «{takror.sarlavha}»
+          </Link>
+        </p>
+      )}
+      {!!manba?.ogohlantirishlar?.length && (
+        <ul className="mt-2 flex flex-col gap-1">
+          {manba.ogohlantirishlar.map((o) => (
+            <li key={o} className="flex items-start gap-2 text-[12.5px]" style={{ color: "var(--ink-2)" }}>
+              <CircleAlert size={14} className="mt-0.5 flex-none" style={{ color: "var(--lvl-1)" }} />
+              {t(`mb.o.${o}` as Kalit)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </motion.div>
   );
 }

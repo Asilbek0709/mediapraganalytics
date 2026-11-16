@@ -7,7 +7,9 @@
  */
 import ExcelJS from "exceljs";
 
-import { all, hozir, one, run, transaction } from "./db.ts";
+import { all, hozir, matnHeshi, one, run, transaction } from "./db.ts";
+import { idRaqami } from "./format.ts";
+import { havolaKaliti } from "./manba.ts";
 import {
   MAYDONLAR,
   csvTahlil,
@@ -146,6 +148,20 @@ async function bazadagiKalitlar(): Promise<Set<string>> {
   );
 }
 
+/** Aniq takror (ТЗ v2, 3.3): bir xil havola yoki matn xeshi → material raqami */
+async function bazadagiAniqKalitlar(): Promise<{ havola: Map<string, number>; hesh: Map<string, number> }> {
+  const havola = new Map<string, number>();
+  const hesh = new Map<string, number>();
+  for (const r of await all<{ id: number; havola: string | null; matn_hash: string | null }>(
+    "SELECT id, havola, matn_hash FROM materiallar",
+  )) {
+    const k = havolaKaliti(r.havola);
+    if (k && !havola.has(k)) havola.set(k, r.id);
+    if (r.matn_hash && !hesh.has(r.matn_hash)) hesh.set(r.matn_hash, r.id);
+  }
+  return { havola, hesh };
+}
+
 const satr = (v: unknown): string | null => {
   if (v == null) return null;
   const s = (v instanceof Date ? v.toISOString().slice(0, 10) : String(v)).replace(/\r\n/g, "\n").trim();
@@ -155,6 +171,9 @@ const satr = (v: unknown): string | null => {
 async function qatorlarniTekshirish(xom: XomQator[]): Promise<{ qatorlar: ImportQatori[]; yangiNashrlar: KoribChiqish["yangiNashrlar"] }> {
   const nashrlar = await nashrXaritasi();
   const bazada = await bazadagiKalitlar();
+  const aniq = await bazadagiAniqKalitlar();
+  const fayldaHavola = new Map<string, number>();
+  const fayldaHesh = new Map<string, number>();
   const faylda = new Set<string>();
   const yangi = new Map<string, { nomi: string; turi: MediaTuri; qatorlar: number }>();
   const qatorlar: ImportQatori[] = [];
@@ -202,6 +221,16 @@ async function qatorlarniTekshirish(xom: XomQator[]): Promise<{ qatorlar: Import
     const mavzu = satr(q.mavzu);
     if (janr && janr.length > 100) xatolar.push({ k: "imp.x.janrUzun" });
     if (mavzu && mavzu.length > 200) xatolar.push({ k: "imp.x.mavzuUzun" });
+
+    // bir xil havola yoki matn — hech qachon qayta qo‘shilmaydi (xato qatorlar ro‘yxatida ko‘rsatiladi)
+    const hk = havolaKaliti(havola);
+    const hs = sarlavha ? matnHeshi({ sarlavha, lid: satr(q.lid), matn: satr(q.matn) }) : null;
+    if (hk && aniq.havola.has(hk)) xatolar.push({ k: "imp.x.takrorHavola", p: { id: idRaqami(aniq.havola.get(hk)!) } });
+    else if (hs && aniq.hesh.has(hs)) xatolar.push({ k: "imp.x.takrorMatn", p: { id: idRaqami(aniq.hesh.get(hs)!) } });
+    else if (hk && fayldaHavola.has(hk)) xatolar.push({ k: "imp.x.takrorFaylHavola", p: { n: fayldaHavola.get(hk)! } });
+    else if (hs && fayldaHesh.has(hs)) xatolar.push({ k: "imp.x.takrorFaylMatn", p: { n: fayldaHesh.get(hs)! } });
+    if (hk && !fayldaHavola.has(hk)) fayldaHavola.set(hk, qator);
+    if (hs && !fayldaHesh.has(hs)) fayldaHesh.set(hs, qator);
 
     let takroriy: ImportQatori["takroriy"] = null;
     if (nashr && sarlavha) {
@@ -273,7 +302,7 @@ export async function koribChiqish(buf: Buffer, faylNomi: string): Promise<Korib
 // ------------------------------------------------------------------ 2-bosqich: import
 
 export interface ImportSorovi {
-  qatorlar: Partial<Record<Maydon, unknown>> & { qator?: number }[];
+  qatorlar: (Partial<Record<Maydon, unknown>> & { qator?: number })[];
   yangiNashrlar?: { nomi: string; turi: MediaTuri }[];
   takroriylarniOtkazish?: boolean;
 }
@@ -332,9 +361,10 @@ export async function importQilish(sorov: ImportSorovi): Promise<ImportNatijasi>
         nashrId = yaratilgan.get(k)!;
       }
       const r = await one<{ id: number }>(
-        `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-        [nashrId, q.sana, q.janr, q.mavzu, q.havola, q.sarlavha, q.lid, q.matn, vaqt, vaqt],
+        `INSERT INTO materiallar (nashr_id, sana, janr, mavzu, havola, sarlavha, lid, matn, yaratilgan, yangilangan,
+                                  manba_turi, matn_hash)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'import', ?) RETURNING id`,
+        [nashrId, q.sana, q.janr, q.mavzu, q.havola, q.sarlavha, q.lid, q.matn, vaqt, vaqt, matnHeshi(q)],
       );
       const id = r!.id;
       natija.birinchi_id ??= id;

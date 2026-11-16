@@ -4,7 +4,7 @@
  * Statistikaga faqat to‘liq tahlil qilingan (LPSI hisoblangan) materiallar kiradi.
  * «Muammo ulushi» — kategoriya kamida bir marta uchragan materiallar foizi.
  */
-import { all, one } from "./db.ts";
+import { all, one, hisobgaShart } from "./db.ts";
 import { JANR_YOQ } from "./format.ts";
 import { daraja, metodikaniYuklash } from "./scoring.ts";
 import type { Dashboard, Kesim, MediaTuri, Metodika, Mezon, MuammoChastota, Qism } from "./types.ts";
@@ -41,6 +41,7 @@ export async function materialQatorlari(): Promise<MaterialQator[]> {
      FROM materiallar m
      JOIN nashrlar n ON n.id = m.nashr_id
      LEFT JOIN tahlillar t ON t.material_id = m.id
+     WHERE ${hisobgaShart("m")}
      ORDER BY m.id`,
   );
   const belgilar = await all<{ material_id: number; kategoriya: string; soni: number }>(
@@ -109,7 +110,8 @@ export async function muammolarChastotasi(qatorlar: MaterialQator[], m: Metodika
   const qismlar = await all<{ kategoriya: string; qism: Qism; soni: number }>(
     `SELECT b.kategoriya, b.qism, COUNT(*) AS soni
      FROM belgilar b JOIN tahlillar t ON t.material_id = b.material_id
-     WHERE t.lpsi IS NOT NULL
+     JOIN materiallar m ON m.id = b.material_id
+     WHERE t.lpsi IS NOT NULL AND ${hisobgaShart("m")}
      GROUP BY b.kategoriya, b.qism`,
   );
   return Object.values(m.kategoriyalar).map((kat) => {
@@ -140,6 +142,7 @@ export async function dashboard(): Promise<Dashboard> {
   const ortachaLpsi = ortacha(t.map((q) => q.lpsi));
   const mezonlar = await all<Mezon>("SELECT * FROM mezonlar ORDER BY kod");
   const nashrlarSoni = (await one<{ n: number }>("SELECT COUNT(*) AS n FROM nashrlar"))?.n ?? 0;
+  const chetda = (await one<{ n: number }>(`SELECT COUNT(*) AS n FROM materiallar m WHERE NOT ${hisobgaShart("m")}`))?.n ?? 0;
 
   let quyi = 0;
   const taqsimot = m.shkala.map((s) => {
@@ -153,6 +156,7 @@ export async function dashboard(): Promise<Dashboard> {
     tahlil_qilingan: t.length,
     toliq_emas: qatorlar.filter((q) => q.tahlil_bor && q.lpsi == null).length,
     tahlil_kutmoqda: qatorlar.filter((q) => !q.tahlil_bor).length,
+    chetda,
     nashrlar_soni: nashrlarSoni,
     ortacha_lpsi: ortachaLpsi,
     ortacha_daraja: ortachaLpsi == null ? null : daraja(ortachaLpsi, m.shkala),

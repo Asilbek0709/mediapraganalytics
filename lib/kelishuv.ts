@@ -10,7 +10,7 @@
  * Natijada matn emas, kodlar qaytariladi — nomlar foydalanuvchi tilida
  * lib/kelishuvNomlari.ts orqali yasaladi.
  */
-import { all } from "./db.ts";
+import { all, hisobgaShart } from "./db.ts";
 import { materialOlish } from "./queries.ts";
 import { daraja as darajaTopish, metodikaniYuklash } from "./scoring.ts";
 import {
@@ -95,7 +95,11 @@ async function kodlashlar(asosiyniQoshish: boolean, materialId?: number): Promis
       sanoq: eSanoq.get(t.id) ?? {},
     });
   }
-  return natija;
+  // sun’iy va tekshirilmagan materiallar kelishuv hisobiga kirmaydi
+  const hisobda = new Set(
+    (await all<{ id: number }>(`SELECT m.id FROM materiallar m WHERE ${hisobgaShart("m")}`)).map((r) => r.id),
+  );
+  return natija.filter((k) => hisobda.has(k.material_id));
 }
 
 interface Korsatkich {

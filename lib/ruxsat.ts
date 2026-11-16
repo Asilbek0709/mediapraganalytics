@@ -13,8 +13,8 @@ const OQUVCHI: Rol[] = HAMMA;
 /** administrator va ekspert ko‘radigan bo‘limlar (kuzatuvchiga — yo‘q) */
 const ISHCHI: Rol[] = ["admin", "ekspert"];
 
-/** Kirishsiz ochiladigan yo‘llar */
-const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/sozlash$/];
+/** Kirishsiz ochiladigan yo‘llar; /api/cron/zaxira — Vercel Cron, kalitni o‘zi tekshiradi */
+const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/sozlash$/, /^\/api\/cron\/zaxira$/];
 
 interface Qoida {
   yol: RegExp;

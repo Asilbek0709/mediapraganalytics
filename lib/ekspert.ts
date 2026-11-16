@@ -4,8 +4,8 @@
  * Ekspert tahlillari asosiy statistikaga (Bosh panel, Analitika, Excel kesimlari)
  * kirmaydi — ular faqat kodlash ishonchliligini (kelishuvni) baholash uchun.
  */
-import { all, hozir, one, run, transaction } from "./db.ts";
-import { ApiError, materialOlish, metodikaSaqlash, tahlilniTekshirish, type TahlilSaqlash } from "./queries.ts";
+import { all, hozir, one, run, transaction, hisobgaShart } from "./db.ts";
+import { ApiError, materialOlish, metodikaSaqlash, tahlilniTekshirish, type TahlilSaqlash, tahlilgaTayyormi } from "./queries.ts";
 import { ekspertTahliliNatijasiniYangilash, hisoblash, MEZON_KODLARI, metodikaniYuklash } from "./scoring.ts";
 import { tarjimon } from "./i18n/index.ts";
 import type { Til } from "./i18n/til.ts";
@@ -101,7 +101,7 @@ export async function ekspertTahlilOlish(materialId: number, ekspertId: number):
 }
 
 export async function ekspertTahlilSaqlash(materialId: number, ekspertId: number, data: TahlilSaqlash): Promise<Natija> {
-  await materialOlish(materialId);
+  tahlilgaTayyormi(await materialOlish(materialId));
   await ekspertOlish(ekspertId);
   const { tahlil, belgilar } = await tahlilniTekshirish(data);
   return await transaction(async () => {
@@ -267,7 +267,7 @@ export async function ekspertVazniOchirish(ekspertId: number) {
 }
 
 /** Ekspertlar o‘rtacha vaznlarini metodikaga yangi versiya sifatida qo‘llaydi. */
-export async function vaznlarniQollash(til: Til = "uz") {
+export async function vaznlarniQollash(til: Til = "uz", muallif?: string | null) {
   const t = await vaznTahlili();
   if (t.vaznlar.length < 2 || t.mezonlar.some((m) => m.taklif == null)) {
     throw new ApiError(422, "x.qollashUchun2");
@@ -285,7 +285,7 @@ export async function vaznlarniQollash(til: Til = "uz") {
     ),
     shkala: m.shkala,
     izoh: tr.t("eks.qollashIzoh", { n: t.vaznlar.length, w, p }),
-  });
+  }, muallif);
 }
 
 // ------------------------------------------------------------------ ekspert ish joyi
@@ -315,6 +315,7 @@ export async function ekspertVazifalari(ekspertId: number): Promise<{
      FROM materiallar m
      JOIN nashrlar n ON n.id = m.nashr_id
      LEFT JOIN ekspert_tahlillari et ON et.material_id = m.id AND et.ekspert_id = ?
+     WHERE ${hisobgaShart("m")}
      ORDER BY m.id DESC`,
     [ekspertId],
   );
