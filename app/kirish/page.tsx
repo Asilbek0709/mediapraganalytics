@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { KirishView } from "@/components/auth/KirishView";
-import { sozlashKalitiKerak, sozlashKerakmi } from "@/lib/auth";
+import { royxatOchiqmi, sozlashKalitiKerak, sozlashKerakmi } from "@/lib/auth";
 import { sahifaSarlavhasi } from "@/lib/i18n/server";
 import { boshSahifa, qaytishManzili } from "@/lib/ruxsat";
 import { joriyFoydalanuvchi } from "@/lib/sessiya";
@@ -18,5 +18,5 @@ export default async function KirishSahifasi({
   const keyin = typeof sp.keyin === "string" ? sp.keyin : null;
   const f = await joriyFoydalanuvchi();
   if (f) redirect(f.parol_almashtirilsin ? "/profil" : keyin ? qaytishManzili(keyin, f.rol) : boshSahifa(f.rol));
-  return <KirishView sozlash={await sozlashKerakmi()} kalitKerak={sozlashKalitiKerak()} keyin={keyin} />;
+  return <KirishView sozlash={await sozlashKerakmi()} kalitKerak={sozlashKalitiKerak()} keyin={keyin} royxatOchiq={await royxatOchiqmi()} />;
 }

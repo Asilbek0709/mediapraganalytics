@@ -121,7 +121,8 @@ export function LineChart({
               stroke={s.rang}
               strokeWidth={2.75}
               strokeLinecap="round"
-              style={{ filter: `drop-shadow(0 4px 8px color-mix(in oklab, ${s.rang} 55%, transparent))` }}
+              className="grafik-soya"
+              style={{ "--soya": s.rang } as React.CSSProperties}
               strokeLinejoin="round"
               initial={{ pathLength: 0, opacity: 0 }}
               animate={{ pathLength: 1, opacity: 1 }}
@@ -181,7 +182,6 @@ export function LineChart({
               background: "var(--glass-strong)",
               borderColor: "var(--glass-line)",
               boxShadow: "var(--shadow-lg)",
-              backdropFilter: "blur(16px)",
             }}
           >
             <div className="mb-1.5 font-extrabold" style={{ color: "var(--ink)" }}>

@@ -206,6 +206,60 @@ export async function birinchiAdmin(data: unknown): Promise<{ token: string; foy
   });
 }
 
+// ------------------------------------------------------------------ ochiq ro‘yxatdan o‘tish
+
+/** Butun sayt bo‘yicha soatiga ko‘pi bilan shuncha yangi hisob (botlarga qarshi) */
+const ROYXAT_SOAT_CHEGARA = 30;
+
+/** Ro‘yxatdan o‘tish ochiqmi: administrator o‘chirmagan va platforma sozlangan (birinchi administrator bor) */
+export async function royxatOchiqmi(): Promise<boolean> {
+  const s = await one<{ qiymat: string }>("SELECT qiymat FROM sozlamalar WHERE kalit = 'royxat_ochiq'");
+  return s?.qiymat !== "0" && !(await sozlashKerakmi());
+}
+
+export async function royxatniSozlash(data: unknown): Promise<{ ochiq: boolean }> {
+  const d = (data ?? {}) as Record<string, unknown>;
+  if (typeof d.ochiq !== "boolean") throw new ApiError(422, "x.notogriSorov");
+  await run(
+    "INSERT INTO sozlamalar (kalit, qiymat) VALUES ('royxat_ochiq', ?) ON CONFLICT (kalit) DO UPDATE SET qiymat = excluded.qiymat",
+    [d.ochiq ? "1" : "0"],
+  );
+  return { ochiq: d.ochiq };
+}
+
+/**
+ * Oddiy foydalanuvchi o‘zi ro‘yxatdan o‘tadi — kuzatuvchi roli (faqat ko‘rish). Ekspert qilishni administrator
+ * «Foydalanuvchilar» sahifasida rolni o‘zgartirib bajaradi. «veb_sayt» — botlar uchun yashirin tuzoq maydoni.
+ */
+export async function royxatdanOtish(data: unknown): Promise<{ token: string; foydalanuvchi: Foydalanuvchi }> {
+  const d = (data ?? {}) as Record<string, unknown>;
+  if (!(await royxatOchiqmi())) throw new ApiError(403, "au.x.royxatYopiq");
+  if (typeof d.veb_sayt === "string" && d.veb_sayt.trim()) throw new ApiError(422, "au.x.maydonlar");
+  const email = emailNormal(d.email);
+  const ism = typeof d.ism === "string" ? d.ism.trim() : "";
+  if (!emailTogri(email)) throw new ApiError(422, "au.x.email");
+  if (!ism || ism.length > 200) throw new ApiError(422, "au.x.maydonlar");
+  const parol = parolniTekshir(d.parol);
+  if (typeof d.takror === "string" && d.takror !== parol) throw new ApiError(422, "au.parolMos");
+  const soatOldin = hozir(new Date(Date.now() - 3600_000));
+  const songgi = (await one<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM foydalanuvchilar WHERE ozi_royxatdan AND yaratilgan >= ?",
+    [soatOldin],
+  ))!.n;
+  if (songgi >= ROYXAT_SOAT_CHEGARA) throw new ApiError(429, "au.x.royxatKop");
+  if (await one("SELECT 1 FROM foydalanuvchilar WHERE email = ?", [email])) throw new ApiError(409, "au.x.emailBand");
+  const vaqt = hozir();
+  const f = await one<{ id: number }>(
+    `INSERT INTO foydalanuvchilar (email, ism, rol, parol_hash, parol_almashtirilsin, yaratilgan, oxirgi_kirish, ozi_royxatdan)
+     VALUES (?, ?, 'kuzatuvchi', ?, false, ?, ?, true) RETURNING id`,
+    [email, ism, await parolXeshi(parol), vaqt, vaqt],
+  );
+  return {
+    token: await sessiyaYaratish(f!.id),
+    foydalanuvchi: { id: f!.id, email, ism, rol: "kuzatuvchi", ekspert_id: null, parol_almashtirilsin: false },
+  };
+}
+
 // ------------------------------------------------------------------ foydalanuvchilarni boshqarish (admin)
 
 export interface FoydalanuvchiQatori extends Foydalanuvchi {
@@ -213,12 +267,14 @@ export interface FoydalanuvchiQatori extends Foydalanuvchi {
   yaratilgan: string;
   oxirgi_kirish: string | null;
   ekspert_ism: string | null;
+  /** kirish sahifasida o‘zi ro‘yxatdan o‘tgan (administrator yaratmagan) */
+  ozi_royxatdan: boolean;
 }
 
 export function foydalanuvchilar(): Promise<FoydalanuvchiQatori[]> {
   return all<FoydalanuvchiQatori>(
     `SELECT f.id, f.email, f.ism, f.rol, f.ekspert_id, f.parol_almashtirilsin, f.faol, f.yaratilgan, f.oxirgi_kirish,
-            e.ism AS ekspert_ism
+            f.ozi_royxatdan, e.ism AS ekspert_ism
      FROM foydalanuvchilar f LEFT JOIN ekspertlar e ON e.id = f.ekspert_id
      ORDER BY CASE f.rol WHEN 'admin' THEN 0 WHEN 'ekspert' THEN 1 ELSE 2 END, f.ism`,
   );

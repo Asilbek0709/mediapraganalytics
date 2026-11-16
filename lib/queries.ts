@@ -8,6 +8,7 @@ import { hammasiniQaytaHisoblash, hisoblash, metodikaniYuklash, tahlilNatijasini
 import type { Kalit, Param, Xabar } from "./i18n/index.ts";
 import type {
   Belgi,
+  BelgiHolati,
   Holat,
   Kategoriya,
   Material,
@@ -354,7 +355,16 @@ export async function tahlilniTekshirish(data: TahlilSaqlash): Promise<{
   const belgilar: Belgi[] = (data.belgilar ?? []).map((b) => {
     if (!katKodlari.has(b.kategoriya)) xatolar.push({ k: "x.nomalumKategoriya", p: { v: b.kategoriya } });
     if (!qismlar.includes(b.qism)) xatolar.push({ k: "x.nomalumQism", p: { v: b.qism } });
-    return { kategoriya: b.kategoriya, qism: b.qism, fragment: matn(b.fragment), izoh: matn(b.izoh) };
+    const holat: BelgiHolati = b.holat === "ai_tasdiqlangan" || b.holat === "ai_ozgartirilgan" ? b.holat : "qolda";
+    return {
+      kategoriya: b.kategoriya,
+      qism: b.qism,
+      fragment: matn(b.fragment),
+      izoh: matn(b.izoh),
+      holat,
+      tasdiqlagan: holat === "qolda" ? null : matn(b.tasdiqlagan),
+      tasdiq_sanasi: holat === "qolda" ? null : matn(b.tasdiq_sanasi),
+    };
   });
 
   if (xatolar.length) throw new ApiError(422, yagona(xatolar));
@@ -377,7 +387,7 @@ export async function tahlilOlish(materialId: number) {
   const material = await materialOlish(materialId);
   const row = await one<Tahlil & { sarlavha_turlari: string }>("SELECT * FROM tahlillar WHERE material_id = ?", [materialId]);
   const belgilar = await all<Belgi>(
-    "SELECT id, kategoriya, qism, fragment, izoh FROM belgilar WHERE material_id = ? ORDER BY id",
+    "SELECT id, kategoriya, qism, fragment, izoh, holat, tasdiqlagan, tasdiq_sanasi FROM belgilar WHERE material_id = ? ORDER BY id",
     [materialId],
   );
   let tahlil: Tahlil | null = null;
@@ -394,7 +404,8 @@ export function tahlilgaTayyormi(m: Pick<Material, "tekshirilgan">) {
   if (m.tekshirilgan === false) throw new ApiError(409, "x.tekshirilmagan");
 }
 
-export async function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Promise<Natija> {
+/** foydalanuvchi — AI taklifidan olingan belgini kim tasdiqlagani (ТЗ v2, 6) */
+export async function tahlilSaqlash(materialId: number, data: TahlilSaqlash, foydalanuvchi?: string | null): Promise<Natija> {
   tahlilgaTayyormi(await materialOlish(materialId));
   const { tahlil, belgilar } = await tahlilniTekshirish(data);
   return await transaction(async () => {
@@ -420,13 +431,15 @@ export async function tahlilSaqlash(materialId: number, data: TahlilSaqlash): Pr
     );
     await run("DELETE FROM belgilar WHERE material_id = ?", [materialId]);
     for (const b of belgilar) {
-      await run("INSERT INTO belgilar (material_id, kategoriya, qism, fragment, izoh) VALUES (?, ?, ?, ?, ?)", [
-        materialId,
-        b.kategoriya,
-        b.qism,
-        b.fragment,
-        b.izoh,
-      ]);
+      const ai = b.holat && b.holat !== "qolda";
+      await run(
+        "INSERT INTO belgilar (material_id, kategoriya, qism, fragment, izoh, holat, tasdiqlagan, tasdiq_sanasi) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          materialId, b.kategoriya, b.qism, b.fragment, b.izoh, b.holat ?? "qolda",
+          ai ? (b.tasdiqlagan ?? foydalanuvchi ?? null) : null,
+          ai ? (b.tasdiq_sanasi ?? hozir()) : null,
+        ],
+      );
     }
     await eskiTanlovlarniTozalash(materialId);
     return (await tahlilNatijasiniYangilash(materialId, await metodikaniYuklash()))!;

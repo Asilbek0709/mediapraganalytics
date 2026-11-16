@@ -4,6 +4,7 @@ import { darajaIndeks, idRaqami, sana } from "./format.ts";
 import { tarjimon } from "./i18n/index.ts";
 import type { Til } from "./i18n/til.ts";
 import { CHEGARA_BALL, CHEGARA_FP, nashrHisoboti, type Xulosa } from "./nashrHisoboti.ts";
+import { izohQatorlari, metodologikIzoh } from "./metodologikIzoh.ts";
 import { CHAP, KENGLIK, RANG, yangiHujjat, type Katak } from "./pdfAsos.ts";
 import type { Korsatkich } from "./davrlar.ts";
 
@@ -313,6 +314,10 @@ export async function nashrHisobotiPdf(
   const usul = t("nh.usulMatni", { b: CHEGARA_BALL, p: CHEGARA_FP });
   bolim(t("nh.usul"), undefined, doc.font("r").fontSize(9).heightOfString(usul, { width: KENGLIK }) + 40);
   izoh(usul, RANG.ink2, 9);
+
+  // ТЗ v2, 7: metodologik izoh — materiallar soni, davr, AI yordami va AI–tadqiqotchi mosligi
+  bolim(t("mi.sarlavha"));
+  for (const satr of izohQatorlari(await metodologikIzoh(nashrId), tr)) izoh(satr, RANG.ink2, 9);
 
   return { pdf: await yakunlash(kolontitul()), fayl: faylNomi() };
 

@@ -1,5 +1,7 @@
+import { tahlilniSaqlashAi } from "@/lib/ai/taklif";
 import { handle, raqam } from "@/lib/route";
-import { tahlilOchirish, tahlilOlish, tahlilSaqlash } from "@/lib/queries";
+import { tahlilOchirish, tahlilOlish } from "@/lib/queries";
+import { apiTalab } from "@/lib/sessiya";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -10,10 +12,11 @@ export const GET = async (_req: Request, { params }: Ctx) => {
   return handle(() => tahlilOlish(raqam(id)), 200, ["admin"]);
 };
 
+/** Tahlil + ko‘rib chiqilgan AI takliflari bo‘yicha qarorlar (bitta tranzaksiyada); kim tasdiqlagani yoziladi */
 export const PUT = async (req: Request, { params }: Ctx) => {
   const { id } = await params;
   const body = await req.json();
-  return handle(() => tahlilSaqlash(raqam(id), body), 200, ["admin"]);
+  return handle(async () => tahlilniSaqlashAi(raqam(id), body, (await apiTalab(["admin"])).ism), 200, ["admin"]);
 };
 
 export const DELETE = async (_req: Request, { params }: Ctx) => {

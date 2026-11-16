@@ -25,6 +25,7 @@ export function Tabs<T extends string>({
         return (
           <button
             key={it.kalit}
+            type="button"
             role="tab"
             aria-selected={faol}
             onClick={() => onChange(it.kalit)}

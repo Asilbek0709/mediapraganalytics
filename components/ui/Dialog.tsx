@@ -41,8 +41,7 @@ export function Dialog({ open, onClose, title, children, footer, keng = false }:
       {open && (
         <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto p-4 sm:p-8">
           <motion.div
-            className="fixed inset-0"
-            style={{ background: "rgba(5, 6, 13, 0.55)", backdropFilter: "blur(6px)" }}
+            className="parda fixed inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

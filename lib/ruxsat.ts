@@ -14,7 +14,7 @@ const OQUVCHI: Rol[] = HAMMA;
 const ISHCHI: Rol[] = ["admin", "ekspert"];
 
 /** Kirishsiz ochiladigan yo‘llar; /api/cron/zaxira — Vercel Cron, kalitni o‘zi tekshiradi */
-const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/sozlash$/, /^\/api\/cron\/zaxira$/];
+const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/royxat$/, /^\/api\/sozlash$/, /^\/api\/cron\/zaxira$/];
 
 interface Qoida {
   yol: RegExp;

@@ -140,3 +140,37 @@ describe("Foydalanuvchilarni boshqarish", () => {
     assert.equal(await db.one("SELECT 1 FROM foydalanuvchilar WHERE id = ?", [id]), undefined);
   });
 });
+
+describe("Ochiq ro‘yxatdan o‘tish", () => {
+  it("oddiy foydalanuvchi o‘zi ro‘yxatdan o‘tadi (kuzatuvchi), administrator uni ekspert qiladi", async () => {
+    assert.ok(await auth.royxatOchiqmi(), "administrator bor — ro‘yxat standart ochiq");
+    const { token, foydalanuvchi } = await auth.royxatdanOtish({ ism: "Oddiy Foydalanuvchi", email: " Oddiy@Test.uz ", parol: "oddiy-parol-1", takror: "oddiy-parol-1" });
+    assert.equal(foydalanuvchi.rol, "kuzatuvchi");
+    assert.equal((await auth.sessiyaFoydalanuvchisi(token))?.email, "oddiy@test.uz");
+    const qator = (await auth.foydalanuvchilar()).find((x) => x.email === "oddiy@test.uz")!;
+    assert.equal(qator.ozi_royxatdan, true);
+    assert.equal(qator.parol_almashtirilsin, false);
+
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "X", email: "oddiy@test.uz", parol: "boshqa-parol-1" }), /au.x.emailBand/);
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "X", email: "x@test.uz", parol: "qisqa" }), /au.x.parolQisqa/);
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "X", email: "y@test.uz", parol: "yaxshi-parol-1", takror: "boshqa" }), /au.parolMos/);
+    // bot tuzog‘i
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "Bot", email: "bot@test.uz", parol: "bot-parol-123", veb_sayt: "http://spam" }), /au.x.maydonlar/);
+
+    // administrator ekspert qiladi — ekspert yozuvi ism bo‘yicha yaratiladi va bog‘lanadi
+    const admin = (await auth.kirish({ email: "admin@test.uz", parol: "admin-parol-1" })).foydalanuvchi;
+    await auth.foydalanuvchiTahrirlash(admin, qator.id, { rol: "ekspert" });
+    const e = await db.one<{ rol: string; ism: string }>(
+      "SELECT f.rol, e.ism FROM foydalanuvchilar f JOIN ekspertlar e ON e.id = f.ekspert_id WHERE f.id = ?",
+      [qator.id],
+    );
+    assert.deepEqual(e, { rol: "ekspert", ism: "Oddiy Foydalanuvchi" });
+
+    // o‘chirilsa — yopiq
+    await auth.royxatniSozlash({ ochiq: false });
+    assert.equal(await auth.royxatOchiqmi(), false);
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "Z", email: "z@test.uz", parol: "zz-parol-123" }), /au.x.royxatYopiq/);
+    await auth.royxatniSozlash({ ochiq: true });
+  });
+});
+

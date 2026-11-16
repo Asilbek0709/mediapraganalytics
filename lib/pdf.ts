@@ -1,6 +1,7 @@
 /** «Tahlil kartasi» — bitta material bo‘yicha PDF hujjat (foydalanuvchi tilida). */
 import { all, hozir } from "./db.ts";
 import { darajaIndeks, idRaqami, sana, sanaVaqt } from "./format.ts";
+import { aiBelgilarSoni } from "./metodologikIzoh.ts";
 import { tarjimon } from "./i18n/index.ts";
 import type { Til } from "./i18n/til.ts";
 import { tahlilOlish } from "./queries.ts";
@@ -29,6 +30,9 @@ export async function tahlilKartasiPdf(materialId: number, til: Til): Promise<Bu
   // ТЗ v2, 7: manba va olingan sana — eksport qilingan hujjatda ham
   kalitQiymat(t("mb.manba"), t(`mb.mt.${material.manba_turi ?? "qolda"}`));
   if (material.olingan_sana) kalitQiymat(t("xl.olinganSana"), sanaVaqt(material.olingan_sana));
+  // ТЗ v2, 7: AI yordami ishlatilganmi
+  const aiN = await aiBelgilarSoni(material.id);
+  if (aiN) kalitQiymat("AI", t("pdf.aiBelgilar", { n: aiN }));
 
   bolim(t("pdf.mediamatn"));
   doc.font("b").fontSize(12).fillColor(RANG.ink).text(material.sarlavha, { width: KENGLIK });

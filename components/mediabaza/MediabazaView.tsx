@@ -13,7 +13,7 @@ import { Card, CardHead } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { useToast } from "@/components/ui/Toast";
 import { FaylOynasi, HavolaOynasi, type ManbaQoralama } from "./ManbaOynalari";
-import { pressable, rowIn } from "@/components/ui/motion";
+import { pressable } from "@/components/ui/motion";
 import { api, xatoMatni } from "@/lib/client";
 import { idRaqami, sana, sanaVaqt } from "@/lib/format";
 import type { Kalit } from "@/lib/i18n";
@@ -367,9 +367,8 @@ export function MediabazaView({
               </tr>
             </thead>
             <tbody>
-              <AnimatePresence initial={false}>
-                {rows.map((m) => (
-                  <motion.tr key={m.id} variants={rowIn} initial="hidden" animate="show" exit="exit" layout>
+              {rows.map((m) => (
+                  <tr key={m.id}>
                     <td className="id">{idRaqami(m.id)}</td>
                     <td>
                       <div className="font-semibold">{m.nashr}</div>
@@ -421,9 +420,8 @@ export function MediabazaView({
                         )}
                       </div>
                     </td>
-                  </motion.tr>
+                  </tr>
                 ))}
-              </AnimatePresence>
               {!rows.length && (
                 <tr>
                   <td colSpan={8} className="py-10 text-center" style={{ color: "var(--muted)" }}>

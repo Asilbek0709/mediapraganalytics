@@ -5,6 +5,7 @@
 import type { MezonIzohi, Qism } from "../types.ts";
 import { atamalar, type Atamalar } from "./atamalar.ts";
 import { ahamiyatMatnlari } from "./matnlar/ahamiyat.ts";
+import { aiMatnlari } from "./matnlar/ai.ts";
 import { analitikaMatnlari } from "./matnlar/analitika.ts";
 import { authMatnlari } from "./matnlar/auth.ts";
 import { buyruqMatnlari } from "./matnlar/buyruq.ts";
@@ -31,7 +32,7 @@ import type { Til } from "./til.ts";
 const BOLIMLAR = [
   umumiy, nav, xato, izoh, vaqt, dashboardMatnlari, mediabazaMatnlari, importMatnlari, tahlilMatnlari,
   analitikaMatnlari, ahamiyatMatnlari, metodikaMatnlari, ekspertMatnlari, hisobotMatnlari, excelMatnlari, rasmMatnlari,
-  misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari, authMatnlari, buyruqMatnlari,
+  misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari, authMatnlari, buyruqMatnlari, aiMatnlari,
 ] as const;
 
 type Bolim = (typeof BOLIMLAR)[number];

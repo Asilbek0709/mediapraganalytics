@@ -196,8 +196,7 @@ export function Nav({ menyu }: { menyu: MenyuHolati }) {
         {ochiq && (
           <div className="fixed inset-0 z-[80] lg:hidden">
             <motion.div
-              className="absolute inset-0"
-              style={{ background: "rgba(5, 6, 13, 0.55)", backdropFilter: "blur(4px)" }}
+              className="parda absolute inset-0"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

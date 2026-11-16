@@ -5,7 +5,9 @@ import type { Ahamiyat, KopGuruhBolimi, Korsatkich } from "./ahamiyat.ts";
 import { analitika, type Granulyatsiya } from "./analitika.ts";
 import { JANR_YOQ, kesim, materialQatorlari, muammolarChastotasi } from "./analytics.ts";
 import { all, hozir, hisobgaShart } from "./db.ts";
+import { aiMoslik } from "./ai/taklif.ts";
 import { vaznTahlili } from "./ekspert.ts";
+import { izohQatorlari, metodologikIzoh } from "./metodologikIzoh.ts";
 import { tarjimon, type Tarjimon, type Kalit } from "./i18n/index.ts";
 import type { Til } from "./i18n/til.ts";
 import { umumiyKelishuv } from "./kelishuv.ts";
@@ -453,6 +455,36 @@ export async function excelHisobot(til: Til, { ekspertUchun = false }: { ekspert
   [34, 30, 22, 70].forEach((w, i) => {
     wsM.getColumn(i + 1).width = w;
   });
+
+  // 13. AI–tadqiqotchi mosligi (agar AI ishlatilgan bo‘lsa) — ТЗ v2, 4.3
+  const ms = await aiMoslik(hisobgaShart("m"));
+  if (ms.takliflar) {
+    const wsA = wb.addWorksheet(t("xl.v.aiMoslik"));
+    wsA.addRow([t("ai.moslik")]).font = { bold: true, size: 12 };
+    wsA.addRow([t("ai.m.jami", { t: ms.takliflar, m: ms.materiallar, a: ms.tasdiqlangan, o: ms.ozgartirilgan, r: ms.rad, k: ms.kutilmoqda })]);
+    wsA.addRow([]);
+    wsA.addRow([t("ai.m.korsatkich"), t("ai.m.n"), t("ai.m.mos"), t("ai.m.kappa"), t("ai.m.talqin")]).font = { bold: true };
+    const katNomi = Object.fromEntries(Object.values(m.kategoriyalar).map((k) => [k.kod, k.nomi]));
+    for (const q of ms.qatorlar) {
+      const nomi =
+        q.tur === "maydon" ? t(`iz.${q.kalit}` as Kalit)
+        : q.tur === "sarlavhaTuri" ? `${t("ai.sarlavhaTurlari")}: ${atama.lugat("sarlavha_turi", q.kalit)}`
+        : q.tur === "kategoriya" ? atama.kategoriya(q.kalit, katNomi[q.kalit])
+        : t("ai.m.belgilarJami");
+      wsA.addRow([nomi, q.n, q.mos, q.kappa, q.talqin ? t(`ai.k.${q.talqin}` as Kalit) : null]);
+    }
+    wsA.addRow([]);
+    wsA.addRow([t("ai.m.modellar", { v: ms.modellar.join(", "), p: ms.promptlar.join(", ") })]);
+    [44, 12, 14, 12, 18].forEach((w, i) => {
+      wsA.getColumn(i + 1).width = w;
+    });
+  }
+
+  // 14. Metodologik izoh — ТЗ v2, 7
+  const wsI = wb.addWorksheet(t("mi.sarlavha"));
+  wsI.addRow([t("mi.sarlavha")]).font = { bold: true, size: 12 };
+  for (const satr of izohQatorlari(await metodologikIzoh(), tr)) wsI.addRow([satr]);
+  wsI.getColumn(1).width = 120;
 
   const buf = Buffer.from(await wb.xlsx.writeBuffer());
   return { buf, fayl: `${t("xl.fayl", { d: new Date().toISOString().slice(0, 10) })}.xlsx` };

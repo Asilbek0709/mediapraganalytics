@@ -492,3 +492,48 @@ export function rEffekti(r: number): EffektKuchi {
 export function epsilonEffekti(e: number): EffektKuchi {
   return e < 0.01 ? "juda_kichik" : e < 0.08 ? "kichik" : e < 0.26 ? "ortacha" : "katta";
 }
+
+// ------------------------------------------------------------------ Cohen κ (AI va tadqiqotchi mosligi)
+
+export interface KappaNatija {
+  /** juftlar soni */
+  n: number;
+  /** to‘liq mos kelgan juftlar ulushi, 0–1 */
+  mos: number | null;
+  /** Cohen κ; tasodifiy mos kelish 1 ga teng bo‘lsa (hammasi bitta toifa) — null */
+  kappa: number | null;
+}
+
+/**
+ * Ikki baholovchi uchun Cohen κ (nominal): κ = (pₒ − pₑ) / (1 − pₑ),
+ * pₑ — har bir baholovchining toifalar ulushlari ko‘paytmalari yig‘indisi (Cohen, 1960).
+ */
+export function cohenKappa(juftlar: [string, string][]): KappaNatija {
+  const n = juftlar.length;
+  if (!n) return { n: 0, mos: null, kappa: null };
+  const a = new Map<string, number>();
+  const b = new Map<string, number>();
+  let teng = 0;
+  for (const [x, y] of juftlar) {
+    if (x === y) teng++;
+    a.set(x, (a.get(x) ?? 0) + 1);
+    b.set(y, (b.get(y) ?? 0) + 1);
+  }
+  const po = teng / n;
+  let pe = 0;
+  for (const [k, v] of a) pe += (v / n) * ((b.get(k) ?? 0) / n);
+  return { n, mos: po, kappa: pe >= 1 ? null : (po - pe) / (1 - pe) };
+}
+
+export type KappaTalqini = "yomon" | "sezilarsiz" | "kuchsiz" | "ortacha" | "sezilarli" | "deyarliTola";
+
+/** Landis va Koch (1977) shkalasi */
+export function kappaTalqini(k: number | null): KappaTalqini | null {
+  if (k == null) return null;
+  if (k < 0) return "yomon";
+  if (k <= 0.2) return "sezilarsiz";
+  if (k <= 0.4) return "kuchsiz";
+  if (k <= 0.6) return "ortacha";
+  if (k <= 0.8) return "sezilarli";
+  return "deyarliTola";
+}

@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { TahlilView, type Baholovchi } from "@/components/tahlil/TahlilView";
+import { aiHolati, kutilayotganTakliflar } from "@/lib/ai/taklif";
 import { ekspertTahlilOlish, materialBaholovchilari } from "@/lib/ekspert";
 import { idRaqami } from "@/lib/format";
 import { sahifaSarlavhasi } from "@/lib/i18n/server";
@@ -50,6 +51,10 @@ export default async function TahlilSahifasi({
     metodikaTolik(),
     f.rol === "admin" ? materialBaholovchilari(materialId) : Promise.resolve(undefined),
   ]);
+  // AI-taklif: faqat administrator, asosiy qatlam, haqiqiy material; kalit o‘rnatilgan va yoqilgan bo‘lsa
+  const aiH = f.rol === "admin" && baholovchi.tur === "asosiy" && data.material.manba_turi !== "suniy" ? await aiHolati() : null;
+  const ai = aiH?.kalitBor && aiH.yoqilgan ? { kutilayotgan: await kutilayotganTakliflar(materialId) } : undefined;
+
   return (
     <TahlilView
       key={baholovchi.tur === "ekspert" ? `e${baholovchi.id}` : "asosiy"}
@@ -61,6 +66,7 @@ export default async function TahlilSahifasi({
       baholovchi={baholovchi}
       baholovchilar={baholovchilar}
       qaytish={f.rol === "ekspert" ? { href: "/vazifalar", kalit: "nav.vazifalar" } : undefined}
+      ai={ai}
     />
   );
 }

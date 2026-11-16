@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { CircleAlert, ShieldCheck } from "lucide-react";
 
 import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
+import { AiBelgiTaklifi, AiMaydonTaklifi, AiPanel, type AiNatija, type AiTaklif, type Qaror } from "./AiTaklif";
 import { LpsiGauge, MezonBars } from "@/components/charts/LpsiGauge";
 import { useTil } from "@/components/i18n/TilProvider";
 import { Card } from "@/components/ui/Card";
@@ -153,6 +154,7 @@ export function TahlilView({
   baholovchi = { tur: "asosiy" },
   baholovchilar,
   qaytish = { href: "/mediabaza", kalit: "nav.mediabaza" },
+  ai,
 }: {
   material: Material;
   tahlil: Tahlil | null;
@@ -163,6 +165,8 @@ export function TahlilView({
   baholovchilar?: BaholovchilarRoyxati;
   /** «orqaga» havolasi: administratorga — Mediabaza, ekspertga — Vazifalarim */
   qaytish?: { href: string; kalit: Kalit };
+  /** AI-taklif mavjud bo‘lsa (administrator, asosiy qatlam, kalit o‘rnatilgan va yoqilgan) — kutilayotgan takliflar */
+  ai?: { kutilayotgan: AiNatija | null };
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -206,6 +210,10 @@ export function TahlilView({
   const [saqlanganVaqt, setSaqlanganVaqt] = useState<string | null>(saqlangan?.yangilangan ?? null);
   const [songgi, setSonggi] = useState<number | null>(null);
   const [tanlov, setTanlov] = useState<{ qism: Qism; fragment: string; x: number; y: number } | null>(null);
+  // AI-taklif: takliflar va tadqiqotchining hali saqlanmagan qarorlari (saqlashda yoziladi)
+  const [aiNatija, setAiNatija] = useState<AiNatija | null>(ai?.kutilayotgan ?? null);
+  const [aiQarorlar, setAiQarorlar] = useState<Record<number, Qaror>>({});
+  const [aiYuklanmoqda, setAiYuklanmoqda] = useState(false);
 
   const sorovNo = useRef(0);
   const popRef = useRef<HTMLDivElement>(null);
@@ -221,10 +229,83 @@ export function TahlilView({
         qism: b.qism,
         fragment: b.fragment || null,
         izoh: b.izoh || null,
+        holat: b.holat ?? "qolda",
+        tasdiqlagan: b.tasdiqlagan ?? null,
+        tasdiq_sanasi: b.tasdiq_sanasi ?? null,
+        ai_taklif_id: b.ai_taklif_id ?? null,
       })),
+      ai_qarorlar: Object.entries(aiQarorlar).map(([id, qaror]) => ({ id: Number(id), qaror })),
     }),
-    [holat, belgilar],
+    [holat, belgilar, aiQarorlar],
   );
+
+  // ---------------------------------------------------------- AI-taklif
+
+  async function aiOlish() {
+    if (Object.keys(aiQarorlar).length && !confirm(t("th.yoqoladi"))) return;
+    setAiYuklanmoqda(true);
+    try {
+      const n = await api.post<AiNatija>(`/api/materiallar/${material.id}/ai-taklif`);
+      setBelgilar((bs) => bs.filter((b) => !b.ai_taklif_id));
+      setAiQarorlar({});
+      setAiNatija(n);
+    } catch (e) {
+      toast(xatoMatni(e), "error");
+    } finally {
+      setAiYuklanmoqda(false);
+    }
+  }
+
+  function qarorYoz(id: number, q: Qaror | null) {
+    setAiQarorlar((p) => {
+      const n = { ...p };
+      if (q) n[id] = q;
+      else delete n[id];
+      return n;
+    });
+    setOzgardi(true);
+  }
+
+  function maydonQarori(tk: AiTaklif, q: Qaror | null) {
+    qarorYoz(tk.id, q);
+    // tasdiqlash va o‘zgartirish — qiymat formaga qo‘yiladi (o‘zgartirishda keyin tadqiqotchi tuzatadi)
+    if (q === "tasdiqlangan" || q === "ozgartirilgan") yangilash({ [tk.blok]: tk.qiymat } as Partial<Holat>);
+  }
+
+  function belgiQarori(tk: AiTaklif, q: Qaror | null, kategoriya?: string) {
+    const b = tk.qiymat as { kategoriya: string; qism: Qism; fragment: string };
+    qarorYoz(tk.id, q);
+    setBelgilar((bs) => {
+      const qolgan = bs.filter((x) => x.ai_taklif_id !== tk.id);
+      if (q !== "tasdiqlangan" && q !== "ozgartirilgan") return qolgan;
+      return [
+        ...qolgan,
+        {
+          kategoriya: q === "ozgartirilgan" && kategoriya ? kategoriya : b.kategoriya,
+          qism: b.qism,
+          fragment: b.fragment,
+          izoh: "",
+          holat: q === "tasdiqlangan" ? "ai_tasdiqlangan" : "ai_ozgartirilgan",
+          ai_taklif_id: tk.id,
+        },
+      ];
+    });
+  }
+
+  const aiQiymatNomi = (tk: AiTaklif) => {
+    const nom = (turkum: string, kod: string) => lugatVariantlari(turkum).find((o) => o.kod === kod)?.nomi ?? kod;
+    if (tk.blok === "sarlavha_turlari") return (tk.qiymat as string[]).map((k) => nom("sarlavha_turi", k)).join(", ") || t("ai.bosh");
+    return nom(tk.blok === "kompozitsiya" ? "kompozitsiya" : "muvofiqlik", String(tk.qiymat));
+  };
+  const aiMaydon = (blok: AiTaklif["blok"]) => {
+    const tk = aiNatija?.takliflar.find((x) => x.blok === blok);
+    if (!tk) return null;
+    return <AiMaydonTaklifi key={tk.id} taklif={tk} qiymatNomi={aiQiymatNomi(tk)} qaror={aiQarorlar[tk.id]} onQaror={(q) => maydonQarori(tk, q)} />;
+  };
+  const aiBelgilar = (guruh: "muammo" | "vosita") =>
+    (aiNatija?.takliflar ?? []).filter(
+      (x) => x.blok === "belgi" && kategoriyalar[(x.qiymat as { kategoriya: string }).kategoriya]?.guruh === guruh,
+    );
 
   useEffect(() => {
     if (!ozgardi) return;
@@ -328,6 +409,13 @@ export function TahlilView({
       const n = await api.put<Natija>(apiYol, payload());
       sorovNo.current++;
       setNatija(n);
+      if (aiNatija && Object.keys(aiQarorlar).length) {
+        const hal = new Set(Object.keys(aiQarorlar).map(Number));
+        const qolgan = aiNatija.takliflar.filter((x) => !hal.has(x.id));
+        setAiNatija(qolgan.length ? { ...aiNatija, takliflar: qolgan, tashlandi: 0 } : null);
+        setAiQarorlar({});
+        setBelgilar((bs) => bs.map((b) => ({ ...b, ai_taklif_id: null })));
+      }
       setOzgardi(false);
       setSaqlanganVaqt(hozirgiVaqt());
       toast(
@@ -633,6 +721,17 @@ export function TahlilView({
             </AnimatePresence>
           </Card>
 
+          {ai && !ekspertRejimi && tekshirilgan && (
+            <motion.div variants={fadeUp}>
+              <AiPanel
+                natija={aiNatija}
+                yuklanmoqda={aiYuklanmoqda}
+                onOlish={aiOlish}
+                kutilmoqda={(aiNatija?.takliflar.length ?? 0) - Object.keys(aiQarorlar).length}
+              />
+            </motion.div>
+          )}
+
           <Blok harf="A" title={t("th.bA")} manba={t("th.mA")}>
             <div className="flex flex-col gap-4">
               <div>
@@ -650,6 +749,7 @@ export function TahlilView({
                     })
                   }
                 />
+                {aiMaydon("sarlavha_turlari")}
               </div>
               <div>
                 <div className="mb-2 text-[13px] font-bold">{t("th.lidMosligi")}</div>
@@ -662,6 +762,7 @@ export function TahlilView({
                   value={holat.kompozitsiya}
                   onChange={(v) => yangilash({ kompozitsiya: v })}
                 />
+                {aiMaydon("kompozitsiya")}
               </div>
             </div>
           </Blok>
@@ -672,6 +773,7 @@ export function TahlilView({
                 <div key={maydon} className="flex flex-wrap items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                   <span className="w-[190px] text-[13px] font-semibold">{t(`iz.${maydon}`)}</span>
                   <Seg options={muvofiqlik} value={holat[maydon]} onChange={(v) => yangilash({ [maydon]: v })} />
+                  {aiNatija?.takliflar.some((x) => x.blok === maydon) && <div className="w-full">{aiMaydon(maydon)}</div>}
                 </div>
               ))}
             </div>
@@ -718,6 +820,24 @@ export function TahlilView({
                       ))}
                   </div>
                 )}
+                {aiBelgilar(guruh).length > 0 && (
+                  <div className="mb-3 flex flex-col gap-2">
+                    <div className="eyebrow">{t("ai.belgilar")}</div>
+                    <AnimatePresence initial={false}>
+                      {aiBelgilar(guruh).map((tk) => (
+                        <AiBelgiTaklifi
+                          key={tk.id}
+                          taklif={tk}
+                          kategoriyalar={met.kategoriyalar.filter((k) => k.guruh === guruh)}
+                          kategoriyaNomi={(kod) => atama.kategoriya(kod, kategoriyalar[kod]?.nomi)}
+                          qismNomi={qismNomi((tk.qiymat as { qism: Qism }).qism)}
+                          qaror={aiQarorlar[tk.id]}
+                          onQaror={(q, kat) => belgiQarori(tk, q, kat)}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
                 <div className="flex flex-col gap-2">
                   <AnimatePresence initial={false}>
                     {royxat.map(({ b, i }) => {
@@ -741,6 +861,11 @@ export function TahlilView({
                             <div className="flex flex-wrap items-center gap-2 text-[13px]">
                               <strong>{atama.kategoriya(b.kategoriya, k?.nomi)}</strong>
                               <span className="tag">{qismNomi(b.qism)}</span>
+                              {b.holat && b.holat !== "qolda" && (
+                                <span className="ai-belgi" title={t("ai.belgiAiTitle", { v: t(`ai.h.${b.holat}`) })}>
+                                  ✦ {t("ai.belgiAi")}
+                                </span>
+                              )}
                               {k?.mezon && k.jarima ? (
                                 <span className="tag">
                                   {k.mezon} −{son(k.jarima)}

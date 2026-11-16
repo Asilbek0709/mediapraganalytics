@@ -56,7 +56,8 @@ export function LpsiGauge({
           strokeWidth={16}
           strokeLinecap="round"
           strokeDasharray={`${AYLANA} ${AYLANA}`}
-          style={{ strokeDashoffset: dashoffset, filter: "blur(9px)", opacity: 0.55 }}
+          className="yoy-nur"
+          style={{ strokeDashoffset: dashoffset }}
         />
         <motion.circle
           cx="98"

@@ -209,8 +209,7 @@ export function Buyruqlar() {
       {ochiq && (
         <div className="fixed inset-0 z-[95] flex items-start justify-center px-3 pt-[10vh]" onKeyDown={klaviatura}>
           <motion.div
-            className="absolute inset-0"
-            style={{ background: "rgba(5, 6, 13, 0.5)", backdropFilter: "blur(6px)" }}
+            className="parda absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

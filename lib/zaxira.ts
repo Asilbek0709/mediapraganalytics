@@ -43,7 +43,9 @@ export interface ZaxiraHolati {
 /** Yuklanadigan fayl chegarasi */
 export const MAX_HAJM = 100 * 1024 * 1024;
 
-const IDENTITY_JADVALLAR = ["nashrlar", "materiallar", "belgilar", "ekspertlar", "ekspert_tahlillari", "ekspert_belgilari"];
+const IDENTITY_JADVALLAR = [
+  "nashrlar", "materiallar", "belgilar", "ekspertlar", "ekspert_tahlillari", "ekspert_belgilari", "ai_sorovlar", "ai_takliflar",
+];
 
 // ------------------------------------------------------------------ olish va yozish
 

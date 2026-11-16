@@ -134,7 +134,8 @@ export function GroupedBars({
                   width={ustunKengligi}
                   rx={5}
                   fill={`url(#gb-${uid}-${si})`}
-                  style={{ filter: `drop-shadow(0 4px 10px color-mix(in oklab, ${s.rang} 45%, transparent))` }}
+                  className="grafik-soya"
+                  style={{ "--soya": s.rang } as React.CSSProperties}
                   initial={{ height: 0, y: ustki + grafikH }}
                   whileInView={{ height: h, y: ustki + grafikH - h }}
                   viewport={{ once: true, margin: "-40px" }}

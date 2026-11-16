@@ -9,8 +9,8 @@ export const softSpring: Transition = { type: "spring", stiffness: 160, damping:
 export const ease = [0.22, 1, 0.36, 1] as const;
 
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.5, ease } },
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease } },
 };
 
 export const fadeIn: Variants = {

@@ -21,10 +21,13 @@ export function FoydalanuvchilarView({
   boshlangich,
   ekspertlar,
   joriyId,
+  royxatOchiq: boshRoyxat = true,
 }: {
   boshlangich: FoydalanuvchiQatori[];
   ekspertlar: Ekspert[];
   joriyId: number;
+  /** kirish sahifasida ochiq ro‘yxatdan o‘tish yoqilganmi */
+  royxatOchiq?: boolean;
 }) {
   const { t } = useTil();
   const toast = useToast();
@@ -32,6 +35,16 @@ export function FoydalanuvchilarView({
   const [band, setBand] = useState(false);
   const [yangi, setYangi] = useState({ ism: "", email: "", rol: "ekspert" as Rol, ekspert_id: "" });
   const [parolOyna, setParolOyna] = useState<{ kim: string; parol: string } | null>(null);
+  const [royxatOchiq, setRoyxatOchiq] = useState(boshRoyxat);
+  // o‘zi ro‘yxatdan o‘tgan, hali kuzatuvchi bo‘lib turgan foydalanuvchilar — administrator ko‘rib chiqishi uchun
+  const yangiRoyxat = royxat.filter((f) => f.ozi_royxatdan && f.rol === "kuzatuvchi").length;
+
+  const royxatniAlmashtir = (ochiq: boolean) =>
+    bajarish(async () => {
+      await api.put("/api/foydalanuvchilar/royxat", { ochiq });
+      setRoyxatOchiq(ochiq);
+      toast(t("au.royxatSaqlandi"));
+    });
 
   const yangilash = async () => setRoyxat(await api.get<FoydalanuvchiQatori[]>("/api/foydalanuvchilar"));
   const bandEkspertlar = new Set(royxat.map((f) => f.ekspert_id).filter(Boolean));
@@ -90,6 +103,25 @@ export function FoydalanuvchilarView({
         <h1>{t("au.foydalanuvchilar")}</h1>
         <p className="hint mt-2 max-w-[80ch]">{t("au.foydalanuvchilarIzoh")}</p>
       </motion.header>
+
+      <Card koarish={false} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={royxatOchiq}
+            disabled={band}
+            onChange={(e) => void royxatniAlmashtir(e.target.checked)}
+          />
+          <span>
+            <span className="block text-[14px] font-bold">
+              {t("au.royxatOchiq")}
+              {yangiRoyxat > 0 && <span className="tag ml-2 !text-[11.5px]">{t("au.yangiRoyxat", { n: yangiRoyxat })}</span>}
+            </span>
+            <span className="hint">{t("au.royxatOchiqIzoh")}</span>
+          </span>
+        </label>
+      </Card>
 
       <Card koarish={false} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
         <CardHead title={t("au.yangiHisob")} />
@@ -163,6 +195,11 @@ export function FoydalanuvchilarView({
                   <tr key={f.id} style={f.faol ? undefined : { opacity: 0.6 }}>
                     <td className="font-semibold">
                       {f.ism} {ozi && <span className="hint">({t("au.siz")})</span>}
+                      {f.ozi_royxatdan && (
+                        <span className="tag ml-1.5 !text-[11px]" title={sanaVaqt(f.yaratilgan)}>
+                          {t("au.oziRoyxat")}
+                        </span>
+                      )}
                     </td>
                     <td className="mono">{f.email}</td>
                     <td>

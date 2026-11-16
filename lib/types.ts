@@ -98,12 +98,20 @@ export interface Material {
   arxiv_bor?: boolean;
 }
 
+export type BelgiHolati = "qolda" | "ai_tasdiqlangan" | "ai_ozgartirilgan";
+
 export interface Belgi {
   id?: number;
   kategoriya: string;
   qism: Qism;
   fragment: string | null;
   izoh: string | null;
+  /** qo‘lda yoki AI taklifidan (tadqiqotchi tasdiqlagan / o‘zgartirgan) — ТЗ v2, 6 */
+  holat?: BelgiHolati;
+  tasdiqlagan?: string | null;
+  tasdiq_sanasi?: string | null;
+  /** faqat brauzer → server: qaysi AI taklifidan olingan (qarorni yozish uchun) */
+  ai_taklif_id?: number | null;
 }
 
 export interface TahlilKirish {

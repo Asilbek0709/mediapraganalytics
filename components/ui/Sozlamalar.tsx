@@ -35,6 +35,7 @@ export function Sozlamalar({ ixcham = false, id = "sb" }: { ixcham?: boolean; id
     return (
       <div className="flex flex-col items-center gap-1">
         <button
+          type="button"
           className="icon-btn"
           title={`${t("nav.korinish")}: ${joriyMavzu.nomi}`}
           aria-label={`${t("nav.korinish")}: ${joriyMavzu.nomi}`}
@@ -45,6 +46,7 @@ export function Sozlamalar({ ixcham = false, id = "sb" }: { ixcham?: boolean; id
           </motion.span>
         </button>
         <button
+          type="button"
           className="icon-btn text-[11.5px] font-extrabold tracking-wide"
           title={`${t("nav.til")}: ${TILLAR[tilIndeks]?.nomi}`}
           aria-label={`${t("nav.til")}: ${TILLAR[tilIndeks]?.nomi}`}
@@ -67,6 +69,7 @@ export function Sozlamalar({ ixcham = false, id = "sb" }: { ixcham?: boolean; id
           const faol = x.kod === til;
           return (
             <button
+              type="button"
               key={x.kod}
               role="radio"
               aria-checked={faol}
@@ -94,6 +97,7 @@ export function Sozlamalar({ ixcham = false, id = "sb" }: { ixcham?: boolean; id
           const faol = m.kalit === mavzu;
           return (
             <button
+              type="button"
               key={m.kalit}
               role="radio"
               aria-checked={faol}

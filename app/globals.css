@@ -730,7 +730,8 @@ input.buyruq-input:focus {
   animation: aylan 7s linear infinite;
 }
 .kirish-maydon { position: relative; }
-.kirish-maydon > input { padding-left: 38px; }
+/* ikki klass — umumiy input[type] qoidasidan (u fayl oxirroqda) kuchliroq, matn belgining ustiga tushmaydi */
+.field.kirish-maydon > input { padding-left: 40px; }
 .kirish-belgi {
   position: absolute;
   left: 13px;
@@ -766,8 +767,8 @@ input.buyruq-input:focus {
 /* sahifa va menyu bandlarining paydo bo‘lishi — JavaScript’siz ham ishlaydi */
 .sahifa-kirish { animation: sahifa-kirish 0.5s var(--ease-out) both; }
 @keyframes sahifa-kirish {
-  from { opacity: 0; transform: translateY(14px); filter: blur(6px); }
-  to { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 .sb-kirish { animation: sb-kirish 0.45s var(--ease-out) both; }
 @keyframes sb-kirish {
@@ -1204,3 +1205,143 @@ textarea:disabled:hover {
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 .tashlash-joyi:disabled { cursor: progress; }
+
+/* ---------------------------------------------------------------- AI-taklif (ТЗ v2: sariq rangda, «AI taklifi» belgisi) */
+
+:root {
+  --ai-bg: rgba(250, 204, 21, 0.14);
+  --ai-line: #ca8a04;
+  --ai-ink: #713f12;
+  --ai-grad: linear-gradient(120deg, #fde047, #facc15 55%, #f59e0b);
+}
+:root[data-theme="dark"] {
+  --ai-bg: rgba(250, 204, 21, 0.1);
+  --ai-line: #facc15;
+  --ai-ink: #fde68a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --ai-bg: rgba(250, 204, 21, 0.1);
+    --ai-line: #facc15;
+    --ai-ink: #fde68a;
+  }
+}
+
+.ai-taklif {
+  border-radius: 12px;
+  background: var(--ai-bg);
+  border: 1px solid color-mix(in oklab, var(--ai-line) 55%, transparent);
+  box-shadow: inset 3px 0 0 var(--ai-line);
+}
+.ai-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--glass);
+  border: 1px solid color-mix(in oklab, var(--ai-line) 45%, var(--glass-line));
+  box-shadow: var(--shadow-sm), 0 0 0 4px color-mix(in oklab, var(--ai-line) 10%, transparent);
+}
+.ai-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--ai-grad);
+}
+.ai-belgi {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #3b2a00;
+  background: var(--ai-grad);
+  white-space: nowrap;
+}
+.ai-tugma {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, var(--ai-line) 45%, transparent);
+  background: color-mix(in oklab, var(--surface) 70%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.ai-tugma:hover {
+  background: var(--surface);
+  border-color: var(--ai-line);
+}
+
+/* botlar uchun tuzoq maydoni (ro‘yxatdan o‘tish): ekranda ham, ekran o‘quvchida ham ko‘rinmaydi */
+.tuzoq {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- parda va grafik effektlari */
+
+.parda {
+  background: rgba(5, 6, 13, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.grafik-soya { filter: drop-shadow(0 4px 9px color-mix(in oklab, var(--soya) 45%, transparent)); }
+.yoy-nur { filter: blur(9px); opacity: 0.55; }
+
+/* ---------------------------------------------------------------- telefon va planshet: yengil rejim
+   Sensorli ekranlarda va 1024 px dan tor oynada videokartani doim band qiladigan effektlar o‘chiriladi:
+   harakatlanuvchi fon, cheksiz animatsiyalar, «shisha» xiralashtirish (har kadrda qayta hisoblanadi),
+   grafiklardagi soyalar. Ko‘rinish o‘sha-o‘sha — ranglar, gradientlar va kirish animatsiyalari qoladi. */
+@media (max-width: 1023px), (hover: none), (pointer: coarse) {
+  .blob { animation: none; will-change: auto; }
+  .blob:nth-child(n + 3) { display: none; }
+  .page-backdrop::after { display: none; }
+
+  h1,
+  .text-aurora,
+  .eyebrow:has(+ h1)::before,
+  .logo-mark::before,
+  .avatar::before,
+  .kirish-halqa::before { animation: none; }
+  .logo-mark::before { filter: none; opacity: 0.45; }
+  .kirish-halqa::after { display: none; }
+
+  .mobil-panel,
+  .drawer,
+  .sidebar,
+  .dialog-oyna,
+  .buyruq-oyna,
+  .toast,
+  .kirish-halqa > .card,
+  .parda {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .mobil-panel,
+  .drawer,
+  .dialog-oyna,
+  .buyruq-oyna,
+  .toast,
+  .kirish-halqa > .card { background: var(--surface); }
+  .parda { background: rgba(5, 6, 13, 0.7); }
+
+  .grafik-soya,
+  .yoy-nur { filter: none; }
+  .yoy-nur { display: none; }
+  .card,
+  .btn,
+  .chip { transition: none; }
+  table.data tbody tr { animation: none; }
+}
