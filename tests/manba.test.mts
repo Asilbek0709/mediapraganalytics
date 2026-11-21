@@ -157,7 +157,7 @@ describe("Sahifadan ajratish", () => {
 describe("Baza: manba, takror, tekshiruv (2-bosqich)", () => {
   it("migratsiya qo‘llangan va jurnalga yozilgan", async () => {
     const m = await db.all<{ versiya: number }>("SELECT versiya FROM migratsiyalar ORDER BY versiya");
-    assert.deepEqual(m.map((x) => x.versiya), [3, 4, 5]);
+    assert.deepEqual(m.map((x) => x.versiya), [3, 4, 5, 6]);
     const u = await db.all<{ column_name: string }>(
       "SELECT column_name FROM information_schema.columns WHERE table_name = 'materiallar' AND column_name IN ('manba_turi','olingan_sana','matn_hash','tekshirilgan')",
     );

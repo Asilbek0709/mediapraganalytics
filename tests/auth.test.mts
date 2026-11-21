@@ -27,8 +27,12 @@ describe("Huquqlar jadvali", () => {
     for (const [yol, usul] of [["/api/materiallar", "POST"], ["/api/materiallar/5", "PUT"], ["/api/materiallar/5", "DELETE"], ["/api/metodika", "PUT"], ["/api/ekspertlar", "POST"], ["/api/vaznlar/qollash", "POST"], ["/api/misollar/tanlangan", "PUT"], ["/api/materiallar/5/pdf", "GET"]]) {
       assert.ok(!ruxsatmi("ekspert", yol, usul), `${usul} ${yol}`);
     }
-    // ko‘rish sahifalari kuzatuvchiga ochilmadi
-    for (const yol of ["/mediabaza", "/metodika", "/ekspertlar"]) assert.ok(!ruxsatmi("kuzatuvchi", yol), yol);
+    // kuzatuvchi (va demo) mediabaza va metodikani ko‘radi, ekspertlar bo‘limini — yo‘q
+    for (const yol of ["/mediabaza", "/metodika", "/api/materiallar"]) assert.ok(ruxsatmi("kuzatuvchi", yol, "GET"), yol);
+    assert.ok(!ruxsatmi("kuzatuvchi", "/ekspertlar"));
+    for (const [yol, usul] of [["/api/materiallar", "POST"], ["/api/materiallar/5", "PUT"], ["/api/materiallar/5/arxiv", "GET"], ["/api/metodika", "PUT"]]) {
+      assert.ok(!ruxsatmi("kuzatuvchi", yol, usul), `${usul} ${yol}`);
+    }
   });
 
   it("kuzatuvchi — faqat ko‘rish; ekspert — o‘z ish joyi", () => {
@@ -48,14 +52,25 @@ describe("Huquqlar jadvali", () => {
 
   it("kirgandan keyin qaytish manzili faqat sayt ichida va shu rolga ochiq", () => {
     assert.equal(qaytishManzili("/analitika?turi=bosma", "kuzatuvchi"), "/analitika?turi=bosma");
-    assert.equal(qaytishManzili("/mediabaza", "kuzatuvchi"), "/");
+    assert.equal(qaytishManzili("/mediabaza", "kuzatuvchi"), "/mediabaza");
+    assert.equal(qaytishManzili("/ekspertlar", "kuzatuvchi"), "/");
     assert.equal(qaytishManzili("//evil.example/x", "admin"), "/");
     assert.equal(qaytishManzili("https://evil.example", "admin"), "/");
     assert.equal(qaytishManzili("/api/zaxira", "admin"), "/");
     assert.equal(qaytishManzili(null, "ekspert"), "/");
     assert.equal(boshSahifa("ekspert"), "/");
     assert.equal(qaytishManzili("/foydalanuvchilar", "ekspert"), "/");
-    assert.ok(ochiqmi("/kirish") && ochiqmi("/api/kirish") && !ochiqmi("/"));
+    assert.ok(ochiqmi("/kirish") && ochiqmi("/api/kirish"));
+    // bosh sahifa, «Platforma haqida» va «Demo ko‘rish» — kirishsiz; boshqa sahifalar — yo‘q
+    assert.ok(ochiqmi("/") && ochiqmi("/haqida") && ochiqmi("/api/demo"));
+    for (const yol of ["/analitika", "/api/dashboard", "/api/bosh-sahifa", "/api/foydalanuvchilar/demo", "/haqida/x", "/api/demo/x"]) {
+      assert.ok(!ochiqmi(yol), yol);
+    }
+    // sozlamalar API’lari — faqat administrator
+    for (const yol of ["/api/bosh-sahifa", "/api/foydalanuvchilar/demo"]) {
+      assert.ok(ruxsatmi("admin", yol, "PUT"));
+      assert.ok(!ruxsatmi("ekspert", yol, "PUT") && !ruxsatmi("kuzatuvchi", yol, "PUT"), yol);
+    }
   });
 });
 
@@ -174,3 +189,67 @@ describe("Ochiq ro‘yxatdan o‘tish", () => {
   });
 });
 
+describe("Demo rejimi", () => {
+  it("parolsiz umumiy hisob: kuzatuvchi, qisqa sessiya, ro‘yxatda ko‘rinmaydi, parol bilan kirib bo‘lmaydi", async () => {
+    assert.ok(await auth.demoOchiqmi(), "standart — yoqilgan");
+    const a = await auth.demoKirish();
+    const b = await auth.demoKirish();
+    assert.equal(a.foydalanuvchi.rol, "kuzatuvchi");
+    assert.equal(a.foydalanuvchi.demo, true);
+    assert.equal(a.foydalanuvchi.id, b.foydalanuvchi.id, "hisob bitta — har tashrifga alohida sessiya");
+    assert.notEqual(a.token, b.token);
+    const f = await auth.sessiyaFoydalanuvchisi(a.token);
+    assert.equal(f?.demo, true);
+    assert.equal(f?.rol, "kuzatuvchi");
+    assert.equal(f?.parol_almashtirilsin, false);
+    const s = await db.one<{ muddat: string }>("SELECT muddat FROM sessiyalar WHERE foydalanuvchi_id = ? ORDER BY muddat DESC LIMIT 1", [a.foydalanuvchi.id]);
+    assert.ok(new Date(s!.muddat).getTime() - Date.now() <= 86400_000 + 60_000, "demo sessiyasi — bir kun");
+
+    // ro‘yxatda va boshqaruvda yo‘q
+    assert.ok(!(await auth.foydalanuvchilar()).some((x) => x.demo || x.email === a.foydalanuvchi.email));
+    const admin = (await auth.kirish({ email: "admin@test.uz", parol: "admin-parol-1" })).foydalanuvchi;
+    await assert.rejects(() => auth.foydalanuvchiTahrirlash(admin, a.foydalanuvchi.id, { rol: "admin" }), /au\.x\.topilmadi/);
+    await assert.rejects(() => auth.parolniTiklash(a.foydalanuvchi.id), /au\.x\.topilmadi/);
+    await assert.rejects(() => auth.foydalanuvchiOchirish(admin, a.foydalanuvchi.id), /au\.x\.topilmadi/);
+
+    // parol bilan kirish va parol almashtirish — yo‘q; xizmat domeni band
+    await assert.rejects(() => auth.kirish({ email: a.foydalanuvchi.email, parol: "!demo" }), /au\.x\.notogri/);
+    await assert.rejects(() => auth.parolniAlmashtirish(f!, a.token, { eski: "x", yangi: "yangi-parol-12" }), /au\.x\.demo/);
+    await assert.rejects(() => auth.royxatdanOtish({ ism: "X", email: "boshqa@mediaprag.local", parol: "yaxshi-parol-1" }), /au\.x\.email/);
+    await assert.rejects(() => auth.foydalanuvchiQoshish({ ism: "X", email: "demo@mediaprag.local", rol: "admin" }), /au\.x\.email/);
+  });
+
+  it("administrator o‘chirsa — demo yopiladi va ochiq demo sessiyalari tugaydi", async () => {
+    const { token } = await auth.demoKirish();
+    await auth.demoniSozlash({ ochiq: false });
+    assert.equal(await auth.demoOchiqmi(), false);
+    assert.equal(await auth.sessiyaFoydalanuvchisi(token), null);
+    await assert.rejects(() => auth.demoKirish(), /au\.x\.demoYopiq/);
+    await assert.rejects(() => auth.demoniSozlash({ ochiq: "ha" }), /x\.notogriSorov/);
+    await auth.demoniSozlash({ ochiq: true });
+    assert.ok(await auth.demoOchiqmi());
+  });
+});
+
+describe("Ochiq bosh sahifa", () => {
+  it("mavzu va muallif saqlanadi, umumiy ko‘rsatkichlar — faqat statistikaga kiradigan materiallardan", async () => {
+    const ochiq = await import("../lib/ochiq.ts");
+    const bosh = await ochiq.boshMatnlar();
+    assert.deepEqual(bosh, { mavzu: { uz: "", ru: "", en: "" }, muallif: "" });
+    const saqlangan = await ochiq.boshMatnlarniSaqlash({ mavzu: { uz: "  O‘zbek   mediamatnlari ", ru: "Медиатексты" }, muallif: "A. Muallifov" });
+    assert.deepEqual(saqlangan, { mavzu: { uz: "O‘zbek mediamatnlari", ru: "Медиатексты", en: "" }, muallif: "A. Muallifov" });
+    assert.equal(ochiq.mavzuMatni(saqlangan, "en"), "O‘zbek mediamatnlari", "tarjima yo‘q — o‘zbekchasi");
+    assert.equal(ochiq.mavzuMatni(saqlangan, "ru"), "Медиатексты");
+    await assert.rejects(() => ochiq.boshMatnlarniSaqlash({ muallif: "x".repeat(201) }), /bh\.x\.uzun/);
+    await assert.rejects(() => ochiq.boshMatnlarniSaqlash({ mavzu: { uz: 5 } }), /x\.notogriSorov/);
+
+    const m = await ochiq.ochiqMalumot();
+    assert.equal(m.matnlar.muallif, "A. Muallifov");
+    assert.equal(m.demo, true);
+    const kutilgan = (await db.one<{ n: number }>(`SELECT COUNT(*) AS n FROM materiallar m WHERE ${db.hisobgaShart("m")}`))!.n;
+    assert.equal(m.materiallar, kutilgan);
+    assert.ok(m.tahlil_qilingan <= m.materiallar);
+    assert.equal(m.mezonlar.reduce((a, x) => a + x.vazn, 0), 100, "vaznlar yig‘indisi — 100");
+    assert.deepEqual(m.shkala.map((s) => s.gacha), [40, 60, 80, 100]);
+  });
+});

@@ -1,5 +1,5 @@
 import { MediabazaView } from "@/components/mediabaza/MediabazaView";
-import { janrlar, materiallarRoyxati, nashrlarRoyxati } from "@/lib/queries";
+import { janrlar, materiallarRoyxati, matnsizRoyxat, nashrlarRoyxati } from "@/lib/queries";
 import { metodikaniYuklash } from "@/lib/scoring";
 import type { Holat } from "@/lib/types";
 import { sahifaSarlavhasi } from "@/lib/i18n/server";
@@ -15,7 +15,7 @@ export default async function MediabazaSahifasi({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const f = await sahifaTalab(["admin", "ekspert"]);
+  const f = await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const sp = await searchParams;
   const holat = HOLATLAR.find((h) => h === sp.holat);
 
@@ -27,7 +27,7 @@ export default async function MediabazaSahifasi({
   ]);
   return (
     <MediabazaView
-      boshlangich={boshlangich}
+      boshlangich={f.rol === "kuzatuvchi" ? matnsizRoyxat(boshlangich) : boshlangich}
       nashrlar={nashrlar}
       janrlar={janrRoyxati}
       shkala={m.shkala}

@@ -8,6 +8,7 @@ import { ahamiyatMatnlari } from "./matnlar/ahamiyat.ts";
 import { aiMatnlari } from "./matnlar/ai.ts";
 import { analitikaMatnlari } from "./matnlar/analitika.ts";
 import { authMatnlari } from "./matnlar/auth.ts";
+import { boshMatnlari } from "./matnlar/bosh.ts";
 import { buyruqMatnlari } from "./matnlar/buyruq.ts";
 import { dashboardMatnlari } from "./matnlar/dashboard.ts";
 import { davrMatnlari } from "./matnlar/davr.ts";
@@ -33,6 +34,7 @@ const BOLIMLAR = [
   umumiy, nav, xato, izoh, vaqt, dashboardMatnlari, mediabazaMatnlari, importMatnlari, tahlilMatnlari,
   analitikaMatnlari, ahamiyatMatnlari, metodikaMatnlari, ekspertMatnlari, hisobotMatnlari, excelMatnlari, rasmMatnlari,
   misollarMatnlari, zaxiraMatnlari, davrMatnlari, nashrHisobotMatnlari, authMatnlari, buyruqMatnlari, aiMatnlari,
+  boshMatnlari,
 ] as const;
 
 type Bolim = (typeof BOLIMLAR)[number];

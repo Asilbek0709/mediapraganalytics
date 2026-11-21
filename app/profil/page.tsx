@@ -12,7 +12,7 @@ export default async function ProfilSahifasi() {
   const e = f.ekspert_id ? await one<{ ism: string }>("SELECT ism FROM ekspertlar WHERE id = ?", [f.ekspert_id]) : null;
   return (
     <ProfilView
-      p={{ ism: f.ism, email: f.email, rol: f.rol, ekspert: e?.ism ?? null, majburiy: f.parol_almashtirilsin, bosh: boshSahifa(f.rol) }}
+      p={{ ism: f.ism, email: f.email, rol: f.rol, ekspert: e?.ism ?? null, majburiy: f.parol_almashtirilsin, bosh: boshSahifa(f.rol), demo: f.demo }}
     />
   );
 }

@@ -5,8 +5,10 @@
  *  - Sessiya tokeni (32 bayt) faqat cookie’da (HttpOnly, SameSite=Lax); bazada uning SHA-256 xeshi.
  *    Muddat — 14 kun, foydalanishda uzaytiriladi.
  *  - Parol tanlash: 15 daqiqada 5 ta muvaffaqiyatsiz urinishdan keyin email vaqtincha bloklanadi.
- *  - Ochiq ro‘yxatdan o‘tish yo‘q: hisoblarni administrator yaratadi (vaqtinchalik parol bilan,
- *    birinchi kirishda almashtiriladi). Birinchi administrator — «sozlash» orqali.
+ *  - Hisoblar: administrator yaratadi (vaqtinchalik parol, birinchi kirishda almashtiriladi) yoki oddiy
+ *    foydalanuvchi o‘zi ro‘yxatdan o‘tadi (kuzatuvchi). Birinchi administrator — «sozlash» orqali.
+ *  - Demo rejimi: bosh sahifadagi «Demo ko‘rish» parolsiz umumiy xizmat hisobiga (kuzatuvchi, demo=true)
+ *    qisqa sessiya ochadi. Bu hisob ro‘yxatlarda ko‘rinmaydi, parol bilan kirib bo‘lmaydi.
  */
 import { createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
@@ -28,6 +30,8 @@ export interface Foydalanuvchi {
   rol: Rol;
   ekspert_id: number | null;
   parol_almashtirilsin: boolean;
+  /** umumiy demo hisobi (faqat ko‘rish, parolsiz) */
+  demo: boolean;
 }
 
 // ------------------------------------------------------------------ parollar
@@ -71,20 +75,25 @@ export function parolniTekshir(parol: unknown): string {
 
 const emailNormal = (e: unknown) => (typeof e === "string" ? e.trim().toLowerCase() : "");
 const emailTogri = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 200;
+/** Xizmat hisoblari domeni (demo) — oddiy hisob uchun band */
+const XIZMAT_DOMENI = "@mediaprag.local";
+const xizmatEmaili = (e: string) => e.endsWith(XIZMAT_DOMENI);
 
 // ------------------------------------------------------------------ sessiyalar
 
 const tokenXeshi = (token: string) => createHash("sha256").update(token).digest("hex");
-const muddat = () => hozir(new Date(Date.now() + SESSIYA_KUN * 86400_000));
+const muddat = (kun = SESSIYA_KUN) => hozir(new Date(Date.now() + kun * 86400_000));
+/** Demo sessiyasi qisqa: bir kun (umumiy hisob, ochiq kompyuterda qolib ketsa ham) */
+export const DEMO_SESSIYA_KUN = 1;
 
 /** Cookie parametrlari: HTTPS’da (Vercel) Secure, kompyuterdagi http://127.0.0.1 da — Secure’siz. */
-export function cookieParametrlari() {
+export function cookieParametrlari(kun = SESSIYA_KUN) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
     secure: process.env.VERCEL === "1" || process.env.MEDIAPRAG_HTTPS === "1",
     path: "/",
-    maxAge: SESSIYA_KUN * 86400,
+    maxAge: kun * 86400,
   };
 }
 
@@ -93,25 +102,26 @@ export async function sessiyaFoydalanuvchisi(token: string | undefined | null): 
   if (!token || token.length > 200) return null;
   const id = tokenXeshi(token);
   const r = await one<Foydalanuvchi & { muddat: string }>(
-    `SELECT f.id, f.email, f.ism, f.rol, f.ekspert_id, f.parol_almashtirilsin, s.muddat
+    `SELECT f.id, f.email, f.ism, f.rol, f.ekspert_id, f.parol_almashtirilsin, f.demo, s.muddat
      FROM sessiyalar s JOIN foydalanuvchilar f ON f.id = s.foydalanuvchi_id
      WHERE s.id = ? AND f.faol`,
     [id],
   );
   if (!r || r.muddat < hozir()) return null;
+  // demo sessiyasi uzaytirilmaydi — bir kundan keyin «Demo ko‘rish» qayta bosiladi
   const yarim = hozir(new Date(Date.now() + (SESSIYA_KUN / 2) * 86400_000));
-  if (r.muddat < yarim) await run("UPDATE sessiyalar SET muddat = ? WHERE id = ?", [muddat(), id]);
+  if (!r.demo && r.muddat < yarim) await run("UPDATE sessiyalar SET muddat = ? WHERE id = ?", [muddat(), id]);
   const { muddat: _m, ...f } = r;
   return f;
 }
 
-async function sessiyaYaratish(foydalanuvchiId: number): Promise<string> {
+async function sessiyaYaratish(foydalanuvchiId: number, kun = SESSIYA_KUN): Promise<string> {
   const token = randomBytes(32).toString("base64url");
   await run("INSERT INTO sessiyalar (id, foydalanuvchi_id, yaratilgan, muddat) VALUES (?, ?, ?, ?)", [
     tokenXeshi(token),
     foydalanuvchiId,
     hozir(),
-    muddat(),
+    muddat(kun),
   ]);
   // Eskirgan sessiyalar vaqti-vaqti bilan tozalanadi
   await run("DELETE FROM sessiyalar WHERE muddat < ?", [hozir()]);
@@ -139,7 +149,7 @@ export async function kirish(data: unknown): Promise<{ token: string; foydalanuv
   if (xatolar >= URINISH_CHEGARA) throw new ApiError(429, "au.x.kopUrinish", { n: URINISH_OYNA_DAQIQA });
 
   const f = await one<Foydalanuvchi & { parol_hash: string; faol: boolean }>(
-    "SELECT id, email, ism, rol, ekspert_id, parol_almashtirilsin, parol_hash, faol FROM foydalanuvchilar WHERE email = ?",
+    "SELECT id, email, ism, rol, ekspert_id, parol_almashtirilsin, demo, parol_hash, faol FROM foydalanuvchilar WHERE email = ? AND NOT demo",
     [email],
   );
   // Hisob bo‘lmasa ham xesh hisoblanadi — javob vaqti bo‘yicha emailni aniqlab bo‘lmasin
@@ -155,6 +165,7 @@ export async function kirish(data: unknown): Promise<{ token: string; foydalanuv
 
 /** Joriy foydalanuvchi o‘z parolini almashtiradi; boshqa qurilmalardagi sessiyalar tugatiladi. */
 export async function parolniAlmashtirish(f: Foydalanuvchi, token: string, data: unknown) {
+  if (f.demo) throw new ApiError(403, "au.x.demo");
   const d = (data ?? {}) as Record<string, unknown>;
   const yangi = parolniTekshir(d.yangi);
   const r = await one<{ parol_hash: string }>("SELECT parol_hash FROM foydalanuvchilar WHERE id = ?", [f.id]);
@@ -201,9 +212,71 @@ export async function birinchiAdmin(data: unknown): Promise<{ token: string; foy
     );
     return {
       token: await sessiyaYaratish(f!.id),
-      foydalanuvchi: { id: f!.id, email, ism, rol: "admin" as const, ekspert_id: null, parol_almashtirilsin: false },
+      foydalanuvchi: { id: f!.id, email, ism, rol: "admin" as const, ekspert_id: null, parol_almashtirilsin: false, demo: false },
     };
   });
+}
+
+// ------------------------------------------------------------------ demo rejimi
+
+const DEMO_EMAIL = "demo" + XIZMAT_DOMENI;
+/** Bir vaqtda saqlanadigan demo sessiyalari chegarasi (eng yangilari qoladi) */
+const DEMO_SESSIYA_CHEGARA = 500;
+
+/** Demo ochiqmi: administrator o‘chirmagan (standart — yoqilgan) va platforma sozlangan */
+export async function demoOchiqmi(): Promise<boolean> {
+  const s = await one<{ qiymat: string }>("SELECT qiymat FROM sozlamalar WHERE kalit = 'demo_ochiq'");
+  return s?.qiymat !== "0" && !(await sozlashKerakmi());
+}
+
+/**
+ * «Demo ko‘rish»: umumiy demo hisobi (birinchi marta — yaratiladi) uchun qisqa sessiya.
+ * Hisob kuzatuvchi roli bilan — o‘zgartiruvchi API’lar proxy’da yopiq, tugmalar interfeysda yashirin.
+ */
+export async function demoKirish(): Promise<{ token: string; foydalanuvchi: Foydalanuvchi }> {
+  if (!(await demoOchiqmi())) throw new ApiError(403, "au.x.demoYopiq");
+  const f = await transaction(async () => {
+    await one("SELECT pg_advisory_xact_lock(4207120)");
+    const bor = await one<{ id: number }>("SELECT id FROM foydalanuvchilar WHERE demo ORDER BY id LIMIT 1");
+    if (bor) {
+      // hisob ro‘yxatlarda yo‘q, lekin rol va holat har ehtimolga qayta qo‘yiladi
+      await run("UPDATE foydalanuvchilar SET rol = 'kuzatuvchi', ekspert_id = NULL, faol = true, oxirgi_kirish = ? WHERE id = ?", [
+        hozir(),
+        bor.id,
+      ]);
+      return bor;
+    }
+    // parol xeshi ataylab yaroqsiz («scrypt$…» shakli emas) — parol bilan kirib bo‘lmaydi
+    return (await one<{ id: number }>(
+      `INSERT INTO foydalanuvchilar (email, ism, rol, parol_hash, parol_almashtirilsin, yaratilgan, oxirgi_kirish, demo)
+       VALUES (?, 'Demo', 'kuzatuvchi', '!demo', false, ?, ?, true) RETURNING id`,
+      [DEMO_EMAIL, hozir(), hozir()],
+    ))!;
+  });
+  const token = await sessiyaYaratish(f.id, DEMO_SESSIYA_KUN);
+  await run(
+    `DELETE FROM sessiyalar WHERE foydalanuvchi_id = ? AND id NOT IN
+       (SELECT id FROM sessiyalar WHERE foydalanuvchi_id = ? ORDER BY yaratilgan DESC LIMIT ${DEMO_SESSIYA_CHEGARA})`,
+    [f.id, f.id],
+  );
+  return {
+    token,
+    foydalanuvchi: { id: f.id, email: DEMO_EMAIL, ism: "Demo", rol: "kuzatuvchi", ekspert_id: null, parol_almashtirilsin: false, demo: true },
+  };
+}
+
+/** Administrator: demo rejimini yoqish/o‘chirish — o‘chirilganda ochiq demo sessiyalari darhol tugaydi */
+export async function demoniSozlash(data: unknown): Promise<{ ochiq: boolean }> {
+  const d = (data ?? {}) as Record<string, unknown>;
+  if (typeof d.ochiq !== "boolean") throw new ApiError(422, "x.notogriSorov");
+  await transaction(async () => {
+    await run(
+      "INSERT INTO sozlamalar (kalit, qiymat) VALUES ('demo_ochiq', ?) ON CONFLICT (kalit) DO UPDATE SET qiymat = excluded.qiymat",
+      [d.ochiq ? "1" : "0"],
+    );
+    if (!d.ochiq) await run("DELETE FROM sessiyalar WHERE foydalanuvchi_id IN (SELECT id FROM foydalanuvchilar WHERE demo)");
+  });
+  return { ochiq: d.ochiq };
 }
 
 // ------------------------------------------------------------------ ochiq ro‘yxatdan o‘tish
@@ -237,7 +310,7 @@ export async function royxatdanOtish(data: unknown): Promise<{ token: string; fo
   if (typeof d.veb_sayt === "string" && d.veb_sayt.trim()) throw new ApiError(422, "au.x.maydonlar");
   const email = emailNormal(d.email);
   const ism = typeof d.ism === "string" ? d.ism.trim() : "";
-  if (!emailTogri(email)) throw new ApiError(422, "au.x.email");
+  if (!emailTogri(email) || xizmatEmaili(email)) throw new ApiError(422, "au.x.email");
   if (!ism || ism.length > 200) throw new ApiError(422, "au.x.maydonlar");
   const parol = parolniTekshir(d.parol);
   if (typeof d.takror === "string" && d.takror !== parol) throw new ApiError(422, "au.parolMos");
@@ -256,7 +329,7 @@ export async function royxatdanOtish(data: unknown): Promise<{ token: string; fo
   );
   return {
     token: await sessiyaYaratish(f!.id),
-    foydalanuvchi: { id: f!.id, email, ism, rol: "kuzatuvchi", ekspert_id: null, parol_almashtirilsin: false },
+    foydalanuvchi: { id: f!.id, email, ism, rol: "kuzatuvchi", ekspert_id: null, parol_almashtirilsin: false, demo: false },
   };
 }
 
@@ -274,8 +347,9 @@ export interface FoydalanuvchiQatori extends Foydalanuvchi {
 export function foydalanuvchilar(): Promise<FoydalanuvchiQatori[]> {
   return all<FoydalanuvchiQatori>(
     `SELECT f.id, f.email, f.ism, f.rol, f.ekspert_id, f.parol_almashtirilsin, f.faol, f.yaratilgan, f.oxirgi_kirish,
-            f.ozi_royxatdan, e.ism AS ekspert_ism
+            f.ozi_royxatdan, f.demo, e.ism AS ekspert_ism
      FROM foydalanuvchilar f LEFT JOIN ekspertlar e ON e.id = f.ekspert_id
+     WHERE NOT f.demo
      ORDER BY CASE f.rol WHEN 'admin' THEN 0 WHEN 'ekspert' THEN 1 ELSE 2 END, f.ism`,
   );
 }
@@ -309,7 +383,7 @@ export async function foydalanuvchiQoshish(data: unknown): Promise<{ id: number;
   const d = (data ?? {}) as Record<string, unknown>;
   const email = emailNormal(d.email);
   const ism = typeof d.ism === "string" ? d.ism.trim() : "";
-  if (!emailTogri(email)) throw new ApiError(422, "au.x.email");
+  if (!emailTogri(email) || xizmatEmaili(email)) throw new ApiError(422, "au.x.email");
   if (!ism || ism.length > 200) throw new ApiError(422, "x.ekspertIsmi");
   const rol = rolTekshir(d.rol);
   if (await one("SELECT 1 FROM foydalanuvchilar WHERE email = ?", [email])) throw new ApiError(409, "au.x.emailBand");
@@ -332,7 +406,10 @@ async function adminQoladimi(istisno: number) {
 }
 
 export async function foydalanuvchiTahrirlash(joriy: Foydalanuvchi, id: number, data: unknown) {
-  const f = await one<{ id: number; rol: Rol; ism: string; faol: boolean }>("SELECT id, rol, ism, faol FROM foydalanuvchilar WHERE id = ?", [id]);
+  const f = await one<{ id: number; rol: Rol; ism: string; faol: boolean }>(
+    "SELECT id, rol, ism, faol FROM foydalanuvchilar WHERE id = ? AND NOT demo",
+    [id],
+  );
   if (!f) throw new ApiError(404, "au.x.topilmadi");
   const d = (data ?? {}) as Record<string, unknown>;
   const rol = d.rol === undefined ? f.rol : rolTekshir(d.rol);
@@ -350,7 +427,7 @@ export async function foydalanuvchiTahrirlash(joriy: Foydalanuvchi, id: number, 
 
 /** Administrator parolni tiklaydi: yangi vaqtinchalik parol, barcha sessiyalar tugatiladi. */
 export async function parolniTiklash(id: number): Promise<{ parol: string }> {
-  if (!(await one("SELECT 1 FROM foydalanuvchilar WHERE id = ?", [id]))) throw new ApiError(404, "au.x.topilmadi");
+  if (!(await one("SELECT 1 FROM foydalanuvchilar WHERE id = ? AND NOT demo", [id]))) throw new ApiError(404, "au.x.topilmadi");
   const parol = vaqtinchalikParol();
   await transaction(async () => {
     await run("UPDATE foydalanuvchilar SET parol_hash = ?, parol_almashtirilsin = true WHERE id = ?", [await parolXeshi(parol), id]);
@@ -361,7 +438,7 @@ export async function parolniTiklash(id: number): Promise<{ parol: string }> {
 
 export async function foydalanuvchiOchirish(joriy: Foydalanuvchi, id: number) {
   if (id === joriy.id) throw new ApiError(409, "au.x.ozingiz");
-  const f = await one<{ rol: Rol }>("SELECT rol FROM foydalanuvchilar WHERE id = ?", [id]);
+  const f = await one<{ rol: Rol }>("SELECT rol FROM foydalanuvchilar WHERE id = ? AND NOT demo", [id]);
   if (!f) throw new ApiError(404, "au.x.topilmadi");
   if (f.rol === "admin") await adminQoladimi(id);
   await run("DELETE FROM foydalanuvchilar WHERE id = ?", [id]);

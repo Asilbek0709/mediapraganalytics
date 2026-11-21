@@ -8,13 +8,25 @@ export type Rol = "admin" | "ekspert" | "kuzatuvchi";
 export const ROLLAR: Rol[] = ["admin", "ekspert", "kuzatuvchi"];
 
 const HAMMA: Rol[] = ["admin", "ekspert", "kuzatuvchi"];
-/** ko‘rish: hamma rollar (ekspert ham — faqat o‘z qatlamini o‘zgartiradi) */
+/** ko‘rish: hamma rollar (ekspert — faqat o‘z qatlamini o‘zgartiradi, kuzatuvchi va demo — faqat ko‘radi) */
 const OQUVCHI: Rol[] = HAMMA;
 /** administrator va ekspert ko‘radigan bo‘limlar (kuzatuvchiga — yo‘q) */
 const ISHCHI: Rol[] = ["admin", "ekspert"];
 
-/** Kirishsiz ochiladigan yo‘llar; /api/cron/zaxira — Vercel Cron, kalitni o‘zi tekshiradi */
-const OCHIQ = [/^\/kirish$/, /^\/api\/kirish$/, /^\/api\/royxat$/, /^\/api\/sozlash$/, /^\/api\/cron\/zaxira$/];
+/**
+ * Kirishsiz ochiladigan yo‘llar. «/» — kirmaganga ochiq bosh sahifa, kirganga Dashboard (sahifaning o‘zi tanlaydi);
+ * /api/demo — «Demo ko‘rish»; /api/cron/zaxira — Vercel Cron, kalitni o‘zi tekshiradi.
+ */
+const OCHIQ = [
+  /^\/$/,
+  /^\/haqida$/,
+  /^\/kirish$/,
+  /^\/api\/kirish$/,
+  /^\/api\/royxat$/,
+  /^\/api\/demo$/,
+  /^\/api\/sozlash$/,
+  /^\/api\/cron\/zaxira$/,
+];
 
 interface Qoida {
   yol: RegExp;
@@ -29,7 +41,6 @@ const QOIDALAR: Qoida[] = [
   { yol: /^\/api\/(chiqish|parol)$/, rollar: HAMMA },
 
   // ko‘rish: barcha rollar
-  { yol: /^\/$/, rollar: OQUVCHI },
   { yol: /^\/analitika$/, rollar: OQUVCHI },
   { yol: /^\/misollar$/, rollar: OQUVCHI },
   { yol: /^\/hisobot$/, rollar: OQUVCHI },
@@ -39,11 +50,12 @@ const QOIDALAR: Qoida[] = [
   { yol: /^\/api\/davrlar\/excel$/, usul: ["GET"], rollar: OQUVCHI },
   { yol: /^\/api\/nashrlar\/\d+\/hisobot$/, usul: ["GET"], rollar: OQUVCHI },
 
-  // ekspert faqat ko‘radi (tahrirlash tugmalari yashirin, o‘zgartiruvchi API — faqat admin)
-  { yol: /^\/mediabaza$/, usul: ["GET"], rollar: ISHCHI },
-  { yol: /^\/metodika$/, usul: ["GET"], rollar: ISHCHI },
+  // ekspert, kuzatuvchi va demo faqat ko‘radi (tahrirlash tugmalari yashirin, o‘zgartiruvchi API — faqat admin);
+  // kuzatuvchiga materiallar ro‘yxati to‘liq matnsiz beriladi
+  { yol: /^\/mediabaza$/, usul: ["GET"], rollar: OQUVCHI },
+  { yol: /^\/metodika$/, usul: ["GET"], rollar: OQUVCHI },
+  { yol: /^\/api\/materiallar$/, usul: ["GET"], rollar: OQUVCHI },
   { yol: /^\/ekspertlar$/, usul: ["GET"], rollar: ISHCHI },
-  { yol: /^\/api\/materiallar$/, usul: ["GET"], rollar: ISHCHI },
 
   // ekspert ish joyi (o‘z qatlami — sahifa/API ichida qo‘shimcha tekshiriladi)
   { yol: /^\/vazifalar$/, rollar: ["admin", "ekspert"] },

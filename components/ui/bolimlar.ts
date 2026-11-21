@@ -3,6 +3,7 @@ import {
   ClipboardCheck,
   FileChartColumn,
   FlaskConical,
+  Info,
   LayoutDashboard,
   Newspaper,
   Quote,
@@ -31,6 +32,8 @@ export const BOLIMLAR: Bolim[] = [
   { href: "/ekspertlar", kalit: "nav.ekspertlar", belgi: UsersRound },
   { href: "/hisobot", kalit: "nav.hisobot", belgi: FileChartColumn },
   { href: "/foydalanuvchilar", kalit: "nav.foydalanuvchilar", belgi: UserCog },
+  // ochiq sahifa: platforma, mavzu va LPSI metodikasi haqida (kirmaganlarga — bosh sahifa)
+  { href: "/haqida", kalit: "bh.haqida", belgi: Info },
 ];
 
 /** Faqat shu rolga ochiq bo‘limlar; «Vazifalarim» — faqat ekspertga. */

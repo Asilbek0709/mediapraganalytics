@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const generateMetadata = () => sahifaSarlavhasi("nav.metodika");
 
 export default async function MetodikaSahifasi() {
-  const f = await sahifaTalab(["admin", "ekspert"]);
+  const f = await sahifaTalab(["admin", "ekspert", "kuzatuvchi"]);
   const [met, tarix] = await Promise.all([metodikaTolik(), metodikaTarixi()]);
   // AI sozlamalari (yo‘riqnoma, chegara) — faqat administratorga
   const ai = f.rol === "admin" ? await aiHolati() : null;

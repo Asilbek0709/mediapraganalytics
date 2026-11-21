@@ -55,8 +55,10 @@ export function MediabazaView({
   const router = useRouter();
   const toast = useToast();
   const { t, atama, media, mediaQ } = useTil();
-  // ekspert — faqat ko‘radi va o‘z tahliliga o‘tadi (asosiy tahlil PDF’i va tahrirlash — administratorga)
-  const { admin } = useFoydalanuvchi();
+  // ekspert — faqat ko‘radi va o‘z tahliliga o‘tadi (asosiy tahlil PDF’i va tahrirlash — administratorga);
+  // kuzatuvchi va demo — faqat ro‘yxat va natijalar (tahlil sahifasi ularga yopiq)
+  const { f, admin } = useFoydalanuvchi();
+  const tahlilOchiq = f?.rol === "admin" || f?.rol === "ekspert";
 
   const [nashrlar, setNashrlar] = useState(dastlabkiNashrlar);
   const [rows, setRows] = useState(boshlangich);
@@ -378,7 +380,7 @@ export function MediabazaView({
                     <td>{m.janr ? atama.janr(m.janr) : "—"}</td>
                     <td>{m.mavzu || "—"}</td>
                     <td className="min-w-[260px]">
-                      <Link href={`/tahlil/${m.id}`}>{m.sarlavha}</Link>
+                      {tahlilOchiq ? <Link href={`/tahlil/${m.id}`}>{m.sarlavha}</Link> : <span className="font-semibold">{m.sarlavha}</span>}
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {m.manba_turi !== "qolda" && <span className="tag !text-[11px]">{t(`mb.mt.${m.manba_turi}`)}</span>}
                         {!m.tekshirilgan && (
@@ -394,9 +396,11 @@ export function MediabazaView({
                     </td>
                     <td>
                       <div className="flex justify-end gap-1.5 whitespace-nowrap">
-                        <Link className="btn btn-sm btn-primary" href={`/tahlil/${m.id}`}>
-                          {t("mb.tahlil")}
-                        </Link>
+                        {tahlilOchiq && (
+                          <Link className="btn btn-sm btn-primary" href={`/tahlil/${m.id}`}>
+                            {t("mb.tahlil")}
+                          </Link>
+                        )}
                         {admin && !m.tekshirilgan && (
                           <button className="btn btn-sm" onClick={() => tekshirildiDeb(m)}>
                             <ShieldCheck size={14} />

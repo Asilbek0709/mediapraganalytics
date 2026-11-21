@@ -112,6 +112,12 @@ export interface MaterialFiltr {
   tekshirilgan?: "ha" | "yoq";
 }
 
+/**
+ * Kuzatuvchi (va demo) uchun ro‘yxat: to‘liq matn va xesh berilmaydi — sarlavha, lid, nashr va natija ko‘rinadi.
+ * Matnlar nashrlarniki; ochiq demo ularni qayta tarqatmasligi kerak.
+ */
+export const matnsizRoyxat = (rows: Material[]): Material[] => rows.map((m) => ({ ...m, matn: null, matn_hash: null }));
+
 export async function materiallarRoyxati(f: MaterialFiltr = {}): Promise<Material[]> {
   const shartlar: string[] = [];
   const params: unknown[] = [];

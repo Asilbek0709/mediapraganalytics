@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { Backdrop } from "@/components/ui/Backdrop";
+import { DemoBanner } from "@/components/bosh/DemoBanner";
 import { Buyruqlar } from "@/components/ui/Buyruqlar";
 import { Effektlar } from "@/components/ui/Effektlar";
 import { Nav } from "@/components/ui/Nav";
@@ -25,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const menyu = menyuniOlish((await cookies()).get(MENYU_COOKIE)?.value);
   // Kirish sahifasida (yoki baza vaqtincha ishlamasa) foydalanuvchi yo‘q — menyu ko‘rsatilmaydi
   const f = await joriyFoydalanuvchi().catch(() => null);
-  const foydalanuvchi = f ? { ism: f.ism, rol: f.rol } : null;
+  const foydalanuvchi = f ? { ism: f.ism, rol: f.rol, demo: f.demo } : null;
   return (
     // Mavzu va menyu kengligi serverda qo‘yiladi — sahifa ochilganda «miltillash» va sakrash bo‘lmaydi
     <html
@@ -39,7 +40,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers til={til} mavzu={mavzu} foydalanuvchi={foydalanuvchi}>
           <Nav menyu={menyu} />
           <main className={`app-main ${foydalanuvchi ? "menyu-bilan" : ""}`}>
-            <div className="mx-auto w-full max-w-[1340px] px-4 pb-24 pt-5 sm:px-6 lg:pt-8">{children}</div>
+            <div className="mx-auto w-full max-w-[1340px] px-4 pb-24 pt-5 sm:px-6 lg:pt-8">
+              {f?.demo && <DemoBanner />}
+              {children}
+            </div>
           </main>
           {foydalanuvchi && <Buyruqlar />}
           <Effektlar />

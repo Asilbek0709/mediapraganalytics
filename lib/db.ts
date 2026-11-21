@@ -153,6 +153,15 @@ const MIGRATSIYALAR: Migratsiya[] = [
       `);
     },
   },
+  {
+    versiya: 6,
+    nomi: "Demo rejimi: parolsiz kiriladigan umumiy «faqat ko‘rish» hisobi belgisi",
+    bajar: async (u) => {
+      await u.bajar(`
+        ALTER TABLE foydalanuvchilar ADD COLUMN IF NOT EXISTS demo boolean NOT NULL DEFAULT false;
+      `);
+    },
+  },
 ];
 
 /** Joriy sxema versiyasi — oxirgi migratsiya */

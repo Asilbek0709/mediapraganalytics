@@ -17,12 +17,17 @@ export interface ProfilMalumoti {
   ekspert: string | null;
   majburiy: boolean;
   bosh: string;
+  /** umumiy demo hisobi: parol yo‘q, almashtirish formasi ko‘rsatilmaydi */
+  demo?: boolean;
 }
 
-export async function chiqish() {
+/** Sessiyani tugatib, berilgan sahifaga to‘liq yuklash bilan o‘tadi (menyu va foydalanuvchi yangilanadi). */
+export async function chiqibOtish(manzil: string) {
   await fetch("/api/chiqish", { method: "POST" }).catch(() => {});
-  window.location.assign("/kirish");
+  window.location.assign(manzil);
 }
+
+export const chiqish = () => chiqibOtish("/kirish");
 
 export function ProfilView({ p }: { p: ProfilMalumoti }) {
   const { t } = useTil();
@@ -71,11 +76,16 @@ export function ProfilView({ p }: { p: ProfilMalumoti }) {
         <div className="grid gap-x-6 gap-y-2 sm:grid-cols-[auto_1fr]">
           <span className="hint">{t("au.ism")}</span>
           <span className="font-semibold">{p.ism}</span>
-          <span className="hint">{t("au.email")}</span>
-          <span className="font-semibold">{p.email}</span>
+          {!p.demo && (
+            <>
+              <span className="hint">{t("au.email")}</span>
+              <span className="font-semibold">{p.email}</span>
+            </>
+          )}
           <span className="hint">{t("au.rol")}</span>
           <span className="font-semibold">
-            {t(`au.rol.${p.rol}`)} <span className="hint !font-normal">— {t(`au.rolIzoh.${p.rol}`)}</span>
+            {p.demo ? t("bh.demoRol") : t(`au.rol.${p.rol}`)}{" "}
+            <span className="hint !font-normal">— {t(`au.rolIzoh.${p.rol}`)}</span>
           </span>
           {p.rol === "ekspert" && (
             <>
@@ -84,13 +94,15 @@ export function ProfilView({ p }: { p: ProfilMalumoti }) {
             </>
           )}
         </div>
+        {p.demo && <p className="hint mt-3 max-w-[70ch]">{t("bh.profilDemo")}</p>}
         {!p.majburiy && (
-          <button className="btn mt-4" onClick={chiqish}>
-            {t("au.chiqish")}
+          <button type="button" className="btn mt-4" onClick={() => void (p.demo ? chiqibOtish("/") : chiqish())}>
+            {p.demo ? t("bh.demoChiqish") : t("au.chiqish")}
           </button>
         )}
       </Card>
 
+      {!p.demo && (
       <Card koarish={false} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
         <CardHead title={t("au.parolAlmashtirish")} izoh={t("au.parolTalab", { n: MIN_PAROL_UZUNLIGI })} />
         <form onSubmit={almashtirish} className="grid max-w-[420px] gap-3">
@@ -130,6 +142,7 @@ export function ProfilView({ p }: { p: ProfilMalumoti }) {
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }

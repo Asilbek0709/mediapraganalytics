@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, KeyRound, LockKeyhole, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, KeyRound, LockKeyhole, Mail, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { useTil } from "@/components/i18n/TilProvider";
@@ -202,6 +203,12 @@ export function KirishView({
       <div className="mx-auto mt-6 w-full max-w-[300px]">
         <Sozlamalar id="kirish" />
       </div>
+      {!sozlash && (
+        <Link href="/" className="mx-auto mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold">
+          <ArrowLeft size={15} />
+          {t("bh.boshSahifa")}
+        </Link>
+      )}
     </div>
   );
 }

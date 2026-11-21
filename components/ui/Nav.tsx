@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useFoydalanuvchi } from "@/components/auth/FoydalanuvchiProvider";
-import { chiqish } from "@/components/auth/ProfilView";
+import { chiqibOtish, chiqish } from "@/components/auth/ProfilView";
 import { useTil } from "@/components/i18n/TilProvider";
 import { MENYU_COOKIE, type MenyuHolati } from "@/lib/menyu";
 import { boshSahifa } from "@/lib/ruxsat";
@@ -121,11 +121,17 @@ function MenyuIchi({ turi, yigiq, almashtir }: { turi: "sb" | "drawer"; yigiq: b
                 {f.ism}
               </span>
               <span className="block text-[11.5px] font-semibold" style={{ color: "var(--muted)" }}>
-                {t(`au.rol.${f.rol}`)}
+                {f.demo ? t("bh.demoRol") : t(`au.rol.${f.rol}`)}
               </span>
             </span>
           </Link>
-          <button className="icon-btn flex-none" onClick={chiqish} title={t("au.chiqish")} aria-label={t("au.chiqish")}>
+          <button
+            type="button"
+            className="icon-btn flex-none"
+            onClick={() => void (f.demo ? chiqibOtish("/") : chiqish())}
+            title={f.demo ? t("bh.demoChiqish") : t("au.chiqish")}
+            aria-label={f.demo ? t("bh.demoChiqish") : t("au.chiqish")}
+          >
             <LogOut size={17} />
           </button>
         </div>
